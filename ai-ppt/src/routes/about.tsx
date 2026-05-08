@@ -1,3 +1,4 @@
+import { Switch } from '#/components/ui/switch'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/about')({
@@ -5,5 +6,7 @@ export const Route = createFileRoute('/about')({
 })
 
 function RouteComponent() {
-  return <div>Hello "/about"!</div>
+  return <div>
+    <Switch />
+  </div>
 }
