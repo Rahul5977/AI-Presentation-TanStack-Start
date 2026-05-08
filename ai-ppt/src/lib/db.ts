@@ -3,7 +3,7 @@ import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 
-import { PrismaClient } from "@/generated/prisma/client.js";
+import { PrismaClient } from "../generated/prisma/client.js";
 
 function requireDatabaseUrl(): string {
   const url = process.env.DATABASE_URL;
