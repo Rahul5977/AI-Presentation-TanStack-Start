@@ -99,9 +99,12 @@ export async function startUploadConsumer() {
 
     await publishProgressEvent(payload.presentationId, {
       type: 'slide.image.uploaded',
+      stage: 'uploading-image',
+      jobType: 'SLIDE_IMAGE_UPLOAD',
       slideId: payload.slideId,
       status: nextStatus,
       imageUrl: uploaded.url,
+      attempt: payload.attempt + 1,
     })
   })
 }

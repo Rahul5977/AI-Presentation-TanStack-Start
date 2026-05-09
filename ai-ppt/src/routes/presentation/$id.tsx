@@ -99,6 +99,14 @@ function PresentationProgressPage() {
         | {
             type: 'presentation.finalized'
             status: PresentationProgress['status']
+            readyCount?: number
+            totalSlides?: number
+          }
+        | {
+            type: 'presentation.progress'
+            status: PresentationProgress['status']
+            readyCount?: number
+            totalSlides?: number
           }
         | {
             type: 'slide.content.ready' | 'slide.image.generated' | 'slide.image.uploaded'
@@ -110,7 +118,10 @@ function PresentationProgressPage() {
       setPresentation((current) => {
         if (!current) return current
 
-        if (payload.type === 'presentation.finalized') {
+        if (
+          payload.type === 'presentation.finalized' ||
+          payload.type === 'presentation.progress'
+        ) {
           return {
             ...current,
             status: payload.status,

@@ -89,8 +89,11 @@ export async function startImageConsumer() {
 
     await publishProgressEvent(payload.presentationId, {
       type: 'slide.image.generated',
+      stage: 'generating-image',
+      jobType: 'SLIDE_IMAGE_GENERATE',
       slideId: payload.slideId,
       status: 'IMAGE_READY',
+      attempt: payload.attempt + 1,
     })
   })
 }

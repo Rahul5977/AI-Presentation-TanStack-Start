@@ -1,6 +1,11 @@
 import amqplib from 'amqplib'
 
-import { DEFAULT_MAX_ATTEMPTS, DEFAULT_RETRY_BASE_MS } from '../../../src/server/queue/queues'
+import {
+  DEFAULT_MAX_ATTEMPTS,
+  DEFAULT_RETRY_BASE_MS,
+  queueRetryName,
+} from '../../../src/server/queue/queues'
+import { ensureQueueTopology } from '../../../src/server/queue/topology'
 import { logger } from './logger'
 import { prisma } from './prisma'
 
@@ -24,6 +29,7 @@ export async function getWorkerChannel() {
       const connection = await getConnection()
       const channel = await connection.createChannel()
       channel.prefetch(5)
+      await ensureQueueTopology(channel)
       return channel
     })()
   }
@@ -34,16 +40,32 @@ type JobHandler<TPayload extends { attempt?: number }> = (
   payload: TPayload,
 ) => Promise<void>
 
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-export async function consumeJsonQueue<TPayload extends { attempt?: number; jobId?: string }>(
+export async function enqueueJson(
   queueName: string,
-  handler: JobHandler<TPayload>,
+  payload: Record<string, unknown>,
+  opts?: {
+    delayMs?: number
+    messageId?: string
+    correlationId?: string
+  },
 ) {
   const channel = await getWorkerChannel()
-  await channel.assertQueue(queueName, { durable: true })
+  const targetQueue =
+    opts?.delayMs && opts.delayMs > 0 ? queueRetryName(queueName) : queueName
+  channel.sendToQueue(targetQueue, Buffer.from(JSON.stringify(payload)), {
+    persistent: true,
+    contentType: 'application/json',
+    messageId: opts?.messageId,
+    correlationId: opts?.correlationId,
+    timestamp: Date.now(),
+    expiration: opts?.delayMs ? String(opts.delayMs) : undefined,
+  })
+}
+
+export async function consumeJsonQueue<
+  TPayload extends { attempt?: number; jobId?: string },
+>(queueName: string, handler: JobHandler<TPayload>) {
+  const channel = await getWorkerChannel()
 
   await channel.consume(queueName, async (message) => {
     if (!message) return
@@ -63,7 +85,8 @@ export async function consumeJsonQueue<TPayload extends { attempt?: number; jobI
       const attempt = Number(payload.attempt ?? 0)
       const nextAttempt = attempt + 1
       const maxAttempts = DEFAULT_MAX_ATTEMPTS
-      const errorMessage = error instanceof Error ? error.message : 'Unknown worker error'
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown worker error'
 
       if (payload.jobId) {
         await prisma.generationJob.updateMany({
@@ -78,28 +101,34 @@ export async function consumeJsonQueue<TPayload extends { attempt?: number; jobI
       }
 
       if (nextAttempt >= maxAttempts) {
-        logger.error({ queueName, payload, err: errorMessage }, 'Job moved to dead letter')
+        logger.error(
+          { queueName, payload, err: errorMessage },
+          'Job moved to dead letter',
+        )
         channel.reject(message, false)
         return
       }
 
       const delayMs = DEFAULT_RETRY_BASE_MS * 2 ** attempt
       logger.warn(
-        { queueName, payload, attempt: nextAttempt, delayMs, err: errorMessage },
+        {
+          queueName,
+          payload,
+          attempt: nextAttempt,
+          delayMs,
+          err: errorMessage,
+        },
         'Retrying worker job',
       )
-      await sleep(delayMs)
-      channel.sendToQueue(
+      await enqueueJson(
         queueName,
-        Buffer.from(
-          JSON.stringify({
-            ...payload,
-            attempt: nextAttempt,
-          }),
-        ),
         {
-          persistent: true,
-          contentType: 'application/json',
+          ...payload,
+          attempt: nextAttempt,
+        },
+        {
+          delayMs,
+          messageId: payload.jobId,
         },
       )
       channel.ack(message)

@@ -69,7 +69,12 @@ Keep language, tone and depth aligned to user settings.`,
             speakerNotes: { type: 'string' },
             layoutHints: {
               type: 'object',
-              additionalProperties: true,
+              additionalProperties: false,
+              required: ['layoutType', 'emphasis'],
+              properties: {
+                layoutType: { type: 'string' },
+                emphasis: { type: 'string' },
+              },
             },
             imagePrompt: { type: 'string' },
           },

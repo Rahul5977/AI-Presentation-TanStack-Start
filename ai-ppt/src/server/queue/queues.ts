@@ -11,6 +11,10 @@ export function queueDlqName(queueName: string) {
   return `${queueName}.dlq`
 }
 
+export function queueRetryName(queueName: string) {
+  return `${queueName}.retry`
+}
+
 export const DEFAULT_MAX_ATTEMPTS = Number.parseInt(
   process.env.JOB_MAX_ATTEMPTS ?? '5',
   10,

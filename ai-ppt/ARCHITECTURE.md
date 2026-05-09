@@ -29,6 +29,7 @@ Queues are separated by responsibility:
 - `presentation.finalize`
 
 Each queue has a dead-letter queue (`*.dlq`) bound through a shared dead-letter exchange.
+Each primary queue also has a retry queue (`*.retry`) with TTL-based redelivery back to the primary queue for exponential backoff without blocking workers.
 
 ## Job and idempotency strategy
 
@@ -36,6 +37,7 @@ Each queue has a dead-letter queue (`*.dlq`) bound through a shared dead-letter 
 - Consumers update job status (`PENDING` → `RUNNING` → `SUCCEEDED` / `DEAD_LETTER`).
 - Retries use exponential backoff (`JOB_RETRY_BASE_MS * 2^attempt`) until `JOB_MAX_ATTEMPTS`.
 - On max attempts, the message is rejected and moved to DLQ.
+- Finalize jobs use recheck scheduling (`FINALIZE_RECHECK_MS`) and are requeued without consuming retry budget while slides are still progressing.
 
 ## Data flow
 

@@ -80,7 +80,13 @@ Each slide must include:
               items: {
                 type: 'object',
                 additionalProperties: false,
-                required: ['title', 'intent', 'bullets', 'visualConcept'],
+                required: [
+                  'title',
+                  'intent',
+                  'bullets',
+                  'visualConcept',
+                  'speakerNotesHint',
+                ],
                 properties: {
                   title: { type: 'string' },
                   intent: { type: 'string' },
@@ -91,7 +97,9 @@ Each slide must include:
                     items: { type: 'string' },
                   },
                   visualConcept: { type: 'string' },
-                  speakerNotesHint: { type: 'string' },
+                  speakerNotesHint: {
+                    anyOf: [{ type: 'string' }, { type: 'null' }],
+                  },
                 },
               },
             },

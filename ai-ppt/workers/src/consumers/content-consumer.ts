@@ -92,8 +92,11 @@ export async function startContentConsumer() {
 
       await publishProgressEvent(payload.presentationId, {
         type: 'slide.content.ready',
+        stage: 'writing-content',
+        jobType: 'SLIDE_CONTENT_GENERATE',
         slideId: payload.slideId,
         status: nextStatus,
+        attempt: payload.attempt + 1,
       })
     },
   )

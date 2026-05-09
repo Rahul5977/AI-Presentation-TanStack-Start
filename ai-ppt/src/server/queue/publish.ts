@@ -30,11 +30,21 @@ export type SlideImageUploadJobMessage = BaseJobMessage & {
 
 export type PresentationFinalizeJobMessage = BaseJobMessage
 
-async function publish(queueName: string, payload: object) {
+async function publish(
+  queueName: string,
+  payload: BaseJobMessage & Record<string, unknown>,
+) {
   const channel = await getRabbitChannel()
   channel.sendToQueue(queueName, Buffer.from(JSON.stringify(payload)), {
     persistent: true,
     contentType: 'application/json',
+    messageId: payload.jobId,
+    correlationId: payload.presentationId,
+    timestamp: Date.now(),
+    headers: {
+      'x-presentation-id': payload.presentationId,
+      'x-idempotency-key': payload.idempotencyKey,
+    },
   })
 }
 

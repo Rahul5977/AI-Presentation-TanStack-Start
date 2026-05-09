@@ -1,6 +1,6 @@
 import amqplib from 'amqplib'
 
-import { DLX_NAME, QUEUE_NAMES, queueDlqName } from '@/server/queue/queues'
+import { ensureQueueTopology } from '@/server/queue/topology'
 
 let connectionPromise: Promise<amqplib.ChannelModel> | null = null
 let channelPromise: Promise<amqplib.Channel> | null = null
@@ -21,33 +21,13 @@ export async function getRabbitChannel() {
     channelPromise = (async () => {
       const connection = await getConnection()
       const channel = await connection.createChannel()
-      await ensureQueues(channel)
+      await ensureQueueTopology(channel)
       return channel
     })()
   }
 
   return await channelPromise
 }
-
-async function ensureQueues(channel: amqplib.Channel) {
-  await channel.assertExchange(DLX_NAME, 'direct', { durable: true })
-
-  for (const queueName of Object.values(QUEUE_NAMES)) {
-    const dlqName = queueDlqName(queueName)
-
-    await channel.assertQueue(queueName, {
-      durable: true,
-      arguments: {
-        'x-dead-letter-exchange': DLX_NAME,
-        'x-dead-letter-routing-key': dlqName,
-      },
-    })
-
-    await channel.assertQueue(dlqName, { durable: true })
-    await channel.bindQueue(dlqName, DLX_NAME, dlqName)
-  }
-}
-
 export async function closeRabbit() {
   if (channelPromise) {
     const channel = await channelPromise
