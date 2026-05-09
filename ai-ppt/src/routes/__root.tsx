@@ -1,10 +1,23 @@
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { TanStackDevtools } from '@tanstack/react-devtools'
+import {
+  HeadContent,
+  Outlet,
+  Scripts,
+  createRootRouteWithContext,
+} from '@tanstack/react-router'
+
+import Navbar from '@/components/navbar'
 
 import appCss from '../styles.css?url'
 
-export const Route = createRootRoute({
+import type { QueryClient } from '@tanstack/react-query'
+import QueryClientProvider from '@/integrations/tanstack-query/root-provider'
+import { Toaster } from '#/components/ui/sonner'
+
+interface MyRouterContext {
+  queryClient: QueryClient
+}
+
+export const Route = createRootRouteWithContext<MyRouterContext>()({
   head: () => ({
     meta: [
       {
@@ -15,7 +28,7 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TanStack Start Starter',
+        title: 'PPT.ai - Generate presentations from text',
       },
     ],
     links: [
@@ -25,41 +38,31 @@ export const Route = createRootRoute({
       },
     ],
   }),
-  notFoundComponent: NotFound,
+  component: RootLayout,
   shellComponent: RootDocument,
 })
 
-function NotFound() {
+function RootLayout() {
   return (
-    <div className='p-8'>
-      <h1 className='text-2xl font-semibold'>Page not found</h1>
-      <p className='mt-2 text-muted-foreground'>
-        The page you requested does not exist.
-      </p>
+    <div className="min-h-svh">
+      <Navbar />
+      <Outlet />
     </div>
   )
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning className="dark">
       <head>
         <HeadContent />
       </head>
-      <body>
-        {children}
-        <TanStackDevtools
-          config={{
-            position: 'bottom-right',
-          }}
-          plugins={[
-            {
-              name: 'Tanstack Router',
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-          ]}
-        />
-        <Scripts />
+      <body className="font-sans antialiased bg-background text-foreground selection:bg-primary/20">
+        <QueryClientProvider>
+          {children}
+          <Toaster closeButton position="top-center" richColors />
+          <Scripts />
+        </QueryClientProvider>
       </body>
     </html>
   )
