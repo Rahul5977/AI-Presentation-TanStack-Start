@@ -1,6 +1,4 @@
 import ThemeToggle from '#/components/ThemeToggle'
-import { Button } from '#/components/ui/button'
-import { authClient } from '#/lib/auth-client'
 import { getSession } from '#/lib/auth-function'
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
