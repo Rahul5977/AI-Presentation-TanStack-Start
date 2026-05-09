@@ -12,7 +12,20 @@ function requireDatabaseUrl(): string {
       "DATABASE_URL is missing. Copy .env.example to .env and paste your Neon connection string from Dashboard → Connect.",
     );
   }
-  return url;
+  return normalizeDatabaseUrl(url);
+}
+
+function normalizeDatabaseUrl(rawUrl: string): string {
+  const parsed = new URL(rawUrl);
+  const sslmode = parsed.searchParams.get("sslmode");
+
+  // pg warns that "require" / "verify-ca" semantics are changing;
+  // use verify-full explicitly to keep current strict behavior.
+  if (sslmode === "prefer" || sslmode === "require" || sslmode === "verify-ca") {
+    parsed.searchParams.set("sslmode", "verify-full");
+  }
+
+  return parsed.toString();
 }
 
 declare global {
