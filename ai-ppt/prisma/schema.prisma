@@ -14,6 +14,7 @@ datasource db {
 
 enum PresentationStatus {
   DRAFT
+  QUEUED
   GENERATING
   READY
   FAILED
@@ -61,6 +62,29 @@ enum TemplateKind {
   BOLD_GRADIENT
   EDITORIAL_SERIF
   TECH_DARK
+}
+
+enum SlideStatus {
+  PENDING
+  CONTENT_READY
+  IMAGE_READY
+  READY
+  FAILED
+}
+
+enum JobType {
+  SLIDE_CONTENT_GENERATE
+  SLIDE_IMAGE_GENERATE
+  SLIDE_IMAGE_UPLOAD
+  PRESENTATION_FINALIZE
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  DEAD_LETTER
 }
 
 model Test {
@@ -138,6 +162,10 @@ model Presentation {
   id               String             @id @default(cuid())
   userId           String
   user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  draft            Draft?
+  slides           Slide[]
+  jobs             GenerationJob[]
+  assets           Asset[]
   title            String
   prompt           String
   status           PresentationStatus @default(DRAFT)
@@ -155,5 +183,122 @@ model Presentation {
   lastEditedAt     DateTime           @default(now())
 
   @@index([userId, updatedAt(sort: Desc)])
+  @@index([status, updatedAt(sort: Desc)])
   @@map("presentation")
+}
+
+model Draft {
+  id             String      @id @default(cuid())
+  presentationId String      @unique
+  presentation   Presentation @relation(fields: [presentationId], references: [id], onDelete: Cascade)
+  prompt         String
+  audience       AudienceType
+  audienceCustom String?
+  tone           ToneType
+  lengthPreset   LengthPreset
+  customSlideCount Int?
+  language       String
+  template       TemplateKind
+  imageStyle     ImageStyle
+  depth          DepthType
+  slides         DraftSlide[]
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([updatedAt(sort: Desc)])
+  @@map("draft")
+}
+
+model DraftSlide {
+  id               String   @id @default(cuid())
+  draftId          String
+  draft            Draft    @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  position         Int
+  title            String
+  intent           String
+  bullets          Json
+  visualConcept    String
+  speakerNotesHint String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([draftId, position])
+  @@map("draft_slide")
+}
+
+model Slide {
+  id               String     @id @default(cuid())
+  presentationId   String
+  presentation     Presentation @relation(fields: [presentationId], references: [id], onDelete: Cascade)
+  sourceDraftSlideId String?
+  status           SlideStatus @default(PENDING)
+  position         Int
+  title            String
+  intent           String
+  bullets          Json
+  visualConcept    String
+  speakerNotes     String?
+  layoutHints      Json?
+  imagePrompt      String?
+  imageAssetId     String?
+  imageUrl         String?
+  assets           Asset[]
+  jobs             GenerationJob[]
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  contentReadyAt   DateTime?
+  imageReadyAt     DateTime?
+  readyAt          DateTime?
+  failedAt         DateTime?
+
+  @@index([presentationId, position])
+  @@index([presentationId, status])
+  @@map("slide")
+}
+
+model GenerationJob {
+  id             String     @id @default(cuid())
+  presentationId String
+  presentation   Presentation @relation(fields: [presentationId], references: [id], onDelete: Cascade)
+  slideId        String?
+  slide          Slide?     @relation(fields: [slideId], references: [id], onDelete: Cascade)
+  type           JobType
+  status         JobStatus  @default(PENDING)
+  idempotencyKey String     @unique
+  payload        Json
+  attempt        Int        @default(0)
+  maxAttempts    Int        @default(5)
+  availableAt    DateTime   @default(now())
+  lockedAt       DateTime?
+  completedAt    DateTime?
+  deadLetteredAt DateTime?
+  lastErrorCode  String?
+  lastError      String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@index([status, createdAt])
+  @@index([presentationId, type])
+  @@index([slideId, type])
+  @@map("generation_job")
+}
+
+model Asset {
+  id             String      @id @default(cuid())
+  presentationId String
+  presentation   Presentation @relation(fields: [presentationId], references: [id], onDelete: Cascade)
+  slideId        String?
+  slide          Slide?      @relation(fields: [slideId], references: [id], onDelete: SetNull)
+  provider       String      @default("imagekit")
+  providerFileId String
+  url            String
+  mimeType       String?
+  width          Int?
+  height         Int?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([presentationId, createdAt(sort: Desc)])
+  @@index([slideId, createdAt(sort: Desc)])
+  @@map("asset")
 }

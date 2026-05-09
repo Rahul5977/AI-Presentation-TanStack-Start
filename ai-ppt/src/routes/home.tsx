@@ -3,7 +3,7 @@ import PromptComposer from '@/components/home/PromptComposer'
 import PresentationHistorySidebar from '@/components/home/PresentationHistorySidebar'
 import { authClient } from '@/lib/auth-client'
 import { AUTH_LOGIN_PATH } from '@/lib/auth-path'
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { motion } from 'framer-motion'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
@@ -65,6 +65,7 @@ export const Route = createFileRoute('/home')({
 })
 
 function HomePage() {
+  const navigate = useNavigate()
   const { data } = authClient.useSession()
   const [formValues, setFormValues] =
     useState<PresentationFormValues>(defaultFormValues)
@@ -104,7 +105,7 @@ function HomePage() {
     try {
       setIsSubmitting(true)
       const payload = normalizePresentationPayload(formValues)
-      const response = await fetch('/api/presentations/', {
+      const response = await fetch('/api/presentations/outline', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         credentials: 'same-origin',
@@ -112,7 +113,7 @@ function HomePage() {
       })
       const result = (await response.json()) as {
         error?: string
-        presentationId?: string
+        draftId?: string
       }
       if (!response.ok) {
         if (response.status === 401) {
@@ -130,16 +131,23 @@ function HomePage() {
         )
         return
       }
-      toast.success('Draft created successfully.')
+      if (!result.draftId) {
+        toast.error('Outline was created but draft id is missing.')
+        return
+      }
+      toast.success('Outline draft created.')
       setFormValues(defaultFormValues)
       await loadHistory()
-      // Phase 2 keeps users on /home; later phases redirect to outline/presentation.
+      await navigate({
+        to: '/outline/$draftId',
+        params: { draftId: result.draftId },
+      })
     } catch {
       toast.error('Unable to create presentation. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
-  }, [formValues, loadHistory])
+  }, [formValues, loadHistory, navigate])
 
   return (
     <main className="relative min-h-screen overflow-hidden px-4 pb-16 pt-24 sm:px-6 lg:px-8">
