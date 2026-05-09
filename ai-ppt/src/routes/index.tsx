@@ -1,34 +1,15 @@
-import ThemeToggle from '#/components/ThemeToggle'
 import { getSession } from '#/lib/auth-function'
+import { AUTH_HOME_PATH, AUTH_LOGIN_PATH } from '#/lib/auth-path'
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/')({
-  beforeLoad: async ({ location }) => {
+  beforeLoad: async () => {
     const session = await getSession()
-
-    if (!session) {
-      throw redirect({
-        to: '/login',
-        search: { redirect: location.href },
-      })
-    }
-
-    return { user: session.user }
+    throw redirect({ to: session ? AUTH_HOME_PATH : AUTH_LOGIN_PATH })
   },
-  component: HomePage,
+  component: IndexRedirect,
 })
 
-function HomePage() {
-  return (
-    <div className='p-8'>
-      <h1 className='text-4xl font-bold'>HomePage</h1>
-      <p className='text-lg'>
-        Welcome to the home page
-      </p>
-      <ThemeToggle />
-      {/* <Button>
-        <Button onClick={() => authClient.signOut()}>Logout</Button>
-      </Button> */}
-    </div>
-  )
+function IndexRedirect() {
+  return null
 }

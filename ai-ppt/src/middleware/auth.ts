@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth'
 import {
+  AUTH_HOME_PATH,
   AUTH_LOGIN_PATH,
   isLoginPath,
   isPublicPath,
@@ -31,7 +32,7 @@ export const authMiddleware = createMiddleware({ type: 'request' }).server(
     const session = await auth.api.getSession({ headers })
 
     // logged-in users should not visit login
-    if (isLoginPath(pathname) && session) throw redirect({ to: '/' })
+    if (isLoginPath(pathname) && session) throw redirect({ to: AUTH_HOME_PATH })
 
     // allow public paths
     if (isPublicPath(pathname)) return next()

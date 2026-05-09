@@ -9,13 +9,21 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as HomeRouteImport } from './routes/home'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthRouteRouteImport } from './routes/_auth/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiDbHealthRouteImport } from './routes/api/db-health'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
+import { Route as ApiPresentationsIndexRouteImport } from './routes/api/presentations/index'
+import { Route as ApiPresentationsHistoryRouteImport } from './routes/api/presentations/history'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
+const HomeRoute = HomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
@@ -40,6 +48,16 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => AuthRouteRoute,
 } as any)
+const ApiPresentationsIndexRoute = ApiPresentationsIndexRouteImport.update({
+  id: '/api/presentations/',
+  path: '/api/presentations/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPresentationsHistoryRoute = ApiPresentationsHistoryRouteImport.update({
+  id: '/api/presentations/history',
+  path: '/api/presentations/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -49,51 +67,89 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/home': typeof HomeRoute
   '/login': typeof AuthLoginRoute
   '/api/db-health': typeof ApiDbHealthRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/presentations/history': typeof ApiPresentationsHistoryRoute
+  '/api/presentations/': typeof ApiPresentationsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/home': typeof HomeRoute
   '/login': typeof AuthLoginRoute
   '/api/db-health': typeof ApiDbHealthRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/presentations/history': typeof ApiPresentationsHistoryRoute
+  '/api/presentations': typeof ApiPresentationsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_auth': typeof AuthRouteRouteWithChildren
   '/about': typeof AboutRoute
+  '/home': typeof HomeRoute
   '/_auth/login': typeof AuthLoginRoute
   '/api/db-health': typeof ApiDbHealthRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/presentations/history': typeof ApiPresentationsHistoryRoute
+  '/api/presentations/': typeof ApiPresentationsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/login' | '/api/db-health' | '/api/auth/$'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/home'
+    | '/login'
+    | '/api/db-health'
+    | '/api/auth/$'
+    | '/api/presentations/history'
+    | '/api/presentations/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/login' | '/api/db-health' | '/api/auth/$'
+  to:
+    | '/'
+    | '/about'
+    | '/home'
+    | '/login'
+    | '/api/db-health'
+    | '/api/auth/$'
+    | '/api/presentations/history'
+    | '/api/presentations'
   id:
     | '__root__'
     | '/'
     | '/_auth'
     | '/about'
+    | '/home'
     | '/_auth/login'
     | '/api/db-health'
     | '/api/auth/$'
+    | '/api/presentations/history'
+    | '/api/presentations/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
   AboutRoute: typeof AboutRoute
+  HomeRoute: typeof HomeRoute
   ApiDbHealthRoute: typeof ApiDbHealthRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiPresentationsHistoryRoute: typeof ApiPresentationsHistoryRoute
+  ApiPresentationsIndexRoute: typeof ApiPresentationsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/home': {
+      id: '/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof HomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about': {
       id: '/about'
       path: '/about'
@@ -129,6 +185,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof AuthRouteRoute
     }
+    '/api/presentations/': {
+      id: '/api/presentations/'
+      path: '/api/presentations'
+      fullPath: '/api/presentations/'
+      preLoaderRoute: typeof ApiPresentationsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/presentations/history': {
+      id: '/api/presentations/history'
+      path: '/api/presentations/history'
+      fullPath: '/api/presentations/history'
+      preLoaderRoute: typeof ApiPresentationsHistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -155,8 +225,11 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRouteRoute: AuthRouteRouteWithChildren,
   AboutRoute: AboutRoute,
+  HomeRoute: HomeRoute,
   ApiDbHealthRoute: ApiDbHealthRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiPresentationsHistoryRoute: ApiPresentationsHistoryRoute,
+  ApiPresentationsIndexRoute: ApiPresentationsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -12,6 +12,57 @@ datasource db {
   provider = "postgresql"
 }
 
+enum PresentationStatus {
+  DRAFT
+  GENERATING
+  READY
+  FAILED
+}
+
+enum AudienceType {
+  STUDENTS
+  PROFESSIONALS
+  INVESTORS
+  GENERAL
+  CUSTOM
+}
+
+enum ToneType {
+  FORMAL
+  CASUAL
+  PERSUASIVE
+  EDUCATIONAL
+  INSPIRATIONAL
+}
+
+enum LengthPreset {
+  SHORT
+  MEDIUM
+  LONG
+  CUSTOM
+}
+
+enum ImageStyle {
+  REALISTIC
+  ILLUSTRATION
+  MINIMAL
+  THREE_D
+  NONE
+}
+
+enum DepthType {
+  HIGH_LEVEL
+  BALANCED
+  DETAILED
+}
+
+enum TemplateKind {
+  MINIMAL_MONO
+  BOLD_GRADIENT
+  EDITORIAL_SERIF
+  TECH_DARK
+}
+
 model Test {
   id        String   @id @default(uuid())
   name      String
@@ -29,6 +80,7 @@ model User {
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
+  presentations Presentation[]
 
   @@unique([email])
   @@map("user")
@@ -80,4 +132,28 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+model Presentation {
+  id               String             @id @default(cuid())
+  userId           String
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title            String
+  prompt           String
+  status           PresentationStatus @default(DRAFT)
+  audience         AudienceType       @default(GENERAL)
+  audienceCustom   String?
+  tone             ToneType           @default(EDUCATIONAL)
+  lengthPreset     LengthPreset       @default(MEDIUM)
+  customSlideCount Int?
+  language         String             @default("English")
+  template         TemplateKind       @default(MINIMAL_MONO)
+  imageStyle       ImageStyle         @default(ILLUSTRATION)
+  depth            DepthType          @default(BALANCED)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  lastEditedAt     DateTime           @default(now())
+
+  @@index([userId, updatedAt(sort: Desc)])
+  @@map("presentation")
 }

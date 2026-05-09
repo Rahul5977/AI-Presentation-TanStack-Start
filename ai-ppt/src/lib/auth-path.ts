@@ -1,4 +1,5 @@
 export const AUTH_LOGIN_PATH = '/login'
+export const AUTH_HOME_PATH = '/home'
 export const AUTH_API_PREFIX = '/api/auth'
 export const INNGEST_API_PATH = '/api/inngest'
 

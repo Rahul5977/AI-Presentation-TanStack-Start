@@ -1,5 +1,6 @@
 import LoginForm from '#/components/auth/login-form'
 import { getSession } from '#/lib/auth-function'
+import { AUTH_HOME_PATH } from '#/lib/auth-path'
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { Presentation } from 'lucide-react'
 import { z } from 'zod'
@@ -9,7 +10,7 @@ export const Route = createFileRoute('/_auth/login')({
     const session = await getSession()
 
     if (session) {
-      throw redirect({ to: '/' })
+      throw redirect({ to: AUTH_HOME_PATH })
     }
   },
   validateSearch: z.object({
