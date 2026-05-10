@@ -151,7 +151,7 @@ function HomePage() {
 
   return (
     <main className="relative min-h-screen overflow-hidden px-4 pb-16 pt-24 sm:px-6 lg:px-8">
-      <div className="pointer-events-none absolute inset-x-6 top-0 -z-10 h-96 rounded-full bg-gradient-to-br from-primary/15 via-transparent to-primary/10 blur-3xl" />
+      <div className="pointer-events-none absolute inset-x-6 top-0 -z-10 h-96 rounded-full bg-linear-to-br from-primary/15 via-transparent to-primary/10 blur-3xl" />
       <div className="mx-auto grid w-full max-w-7xl gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
         <motion.section
           initial={{ opacity: 0, y: 8 }}
