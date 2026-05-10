@@ -159,32 +159,48 @@ model Verification {
 }
 
 model Presentation {
-  id               String             @id @default(cuid())
+  id               String               @id @default(cuid())
   userId           String
-  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   draft            Draft?
   slides           Slide[]
   jobs             GenerationJob[]
   assets           Asset[]
+  versions         PresentationVersion[]
   title            String
   prompt           String
-  status           PresentationStatus @default(DRAFT)
-  audience         AudienceType       @default(GENERAL)
+  status           PresentationStatus   @default(DRAFT)
+  audience         AudienceType         @default(GENERAL)
   audienceCustom   String?
-  tone             ToneType           @default(EDUCATIONAL)
-  lengthPreset     LengthPreset       @default(MEDIUM)
+  tone             ToneType             @default(EDUCATIONAL)
+  lengthPreset     LengthPreset         @default(MEDIUM)
   customSlideCount Int?
-  language         String             @default("English")
-  template         TemplateKind       @default(MINIMAL_MONO)
-  imageStyle       ImageStyle         @default(ILLUSTRATION)
-  depth            DepthType          @default(BALANCED)
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
-  lastEditedAt     DateTime           @default(now())
+  language         String               @default("English")
+  template         TemplateKind         @default(MINIMAL_MONO)
+  imageStyle       ImageStyle           @default(ILLUSTRATION)
+  depth            DepthType            @default(BALANCED)
+  shareToken       String?              @unique
+  isPublic         Boolean              @default(false)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  lastEditedAt     DateTime             @default(now())
 
   @@index([userId, updatedAt(sort: Desc)])
   @@index([status, updatedAt(sort: Desc)])
+  @@index([shareToken])
   @@map("presentation")
+}
+
+model PresentationVersion {
+  id             String       @id @default(cuid())
+  presentationId String
+  presentation   Presentation @relation(fields: [presentationId], references: [id], onDelete: Cascade)
+  label          String?
+  snapshot       Json
+  createdAt      DateTime     @default(now())
+
+  @@index([presentationId, createdAt(sort: Desc)])
+  @@map("presentation_version")
 }
 
 model Draft {

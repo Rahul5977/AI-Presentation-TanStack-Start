@@ -6,6 +6,11 @@ export type PresentationProgress = {
   title: string
   status: 'DRAFT' | 'QUEUED' | 'GENERATING' | 'READY' | 'FAILED'
   template: TemplateKind
+  tone: string
+  depth: string
+  imageStyle: string
+  isPublic: boolean
+  shareToken: string | null
   slides: Array<{
     id: string
     position: number
@@ -15,8 +20,9 @@ export type PresentationProgress = {
     visualConcept: string
     speakerNotes: string | null
     layoutHints: unknown
-    status: 'PENDING' | 'CONTENT_READY' | 'IMAGE_READY' | 'READY' | 'FAILED'
     imageUrl: string | null
+    imagePrompt: string | null
+    status: 'PENDING' | 'CONTENT_READY' | 'IMAGE_READY' | 'READY' | 'FAILED'
   }>
 }
 
@@ -34,6 +40,11 @@ export async function getPresentationProgressForUser(
       title: true,
       status: true,
       template: true,
+      tone: true,
+      depth: true,
+      imageStyle: true,
+      isPublic: true,
+      shareToken: true,
       slides: {
         orderBy: [{ position: 'asc' }],
         select: {
@@ -47,6 +58,7 @@ export async function getPresentationProgressForUser(
           layoutHints: true,
           status: true,
           imageUrl: true,
+          imagePrompt: true,
         },
       },
     },
@@ -59,6 +71,11 @@ export async function getPresentationProgressForUser(
     title: presentation.title,
     status: presentation.status,
     template: presentation.template,
+    tone: presentation.tone,
+    depth: presentation.depth,
+    imageStyle: presentation.imageStyle,
+    isPublic: presentation.isPublic,
+    shareToken: presentation.shareToken,
     slides: presentation.slides,
   }
 }

@@ -6,7 +6,11 @@ import { Pool } from "pg";
 import { PrismaClient } from "../generated/prisma/client.js";
 
 function requireDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
+  // Prefer DIRECT_URL (non-pooled) so that pg.Pool's own connection pooling
+  // is used and Prisma interactive transactions ($transaction callbacks) work.
+  // PgBouncer pooled URLs don't support server-side transaction state and will
+  // drop the SSL connection mid-transaction with ERR_SSL_SSLV3_ALERT_BAD_RECORD_MAC.
+  const url = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
   if (!url?.trim()) {
     throw new Error(
       "DATABASE_URL is missing. Copy .env.example to .env and paste your Neon connection string from Dashboard → Connect.",
