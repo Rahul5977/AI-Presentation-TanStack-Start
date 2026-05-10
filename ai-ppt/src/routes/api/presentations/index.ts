@@ -6,7 +6,7 @@ import { getRequestHeaders } from '@tanstack/react-start/server'
 
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import { languageOptions } from '@/lib/presentation-options'
+import { languageOptions, templateValues } from '@/lib/presentation-options'
 
 const createPresentationSchema = z.object({
   prompt: z.string().min(8),
@@ -28,12 +28,7 @@ const createPresentationSchema = z.object({
   lengthPreset: z.enum(['SHORT', 'MEDIUM', 'LONG', 'CUSTOM']),
   customSlideCount: z.number().int().min(1).max(60).optional(),
   language: z.enum(languageOptions),
-  template: z.enum([
-    'MINIMAL_MONO',
-    'BOLD_GRADIENT',
-    'EDITORIAL_SERIF',
-    'TECH_DARK',
-  ]),
+  template: z.enum(templateValues),
   imageStyle: z.enum(['REALISTIC', 'ILLUSTRATION', 'MINIMAL', 'THREE_D', 'NONE']),
   depth: z.enum(['HIGH_LEVEL', 'BALANCED', 'DETAILED']),
 })

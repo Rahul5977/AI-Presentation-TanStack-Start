@@ -1,12 +1,12 @@
 import { Button } from '#/components/ui/button'
 import OptionChips from '@/components/home/OptionChips'
+import TemplatePicker from '@/components/home/TemplatePicker'
 import {
   audienceOptions,
   depthOptions,
   imageStyleOptions,
   languageOptions,
   lengthOptions,
-  templateOptions,
   toneOptions,
 } from '@/lib/presentation-options'
 import type {
@@ -18,6 +18,7 @@ import type {
   TemplateValue,
   ToneValue,
 } from '@/lib/presentation-options'
+import { listTemplates } from '@/templates/registry'
 import { ArrowRight, WandSparkles } from 'lucide-react'
 import { useCallback, useRef } from 'react'
 
@@ -48,6 +49,7 @@ export default function PromptComposer({
   isSubmitting,
 }: PromptComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const templates = listTemplates()
 
   const update = useCallback(
     <TKey extends keyof PresentationFormValues>(
@@ -169,10 +171,9 @@ export default function PromptComposer({
             />
           ) : null}
 
-          <OptionChips
-            title="Template"
+          <TemplatePicker
             value={values.template}
-            options={templateOptions}
+            templates={templates}
             onChange={(v) => update('template', v)}
           />
           <OptionChips

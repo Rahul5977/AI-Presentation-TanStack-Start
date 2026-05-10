@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { languageOptions } from '@/lib/presentation-options'
+import { languageOptions, templateValues } from '@/lib/presentation-options'
 
 export const presentationInputSchema = z.object({
   prompt: z.string().trim().min(8),
@@ -22,12 +22,7 @@ export const presentationInputSchema = z.object({
   lengthPreset: z.enum(['SHORT', 'MEDIUM', 'LONG', 'CUSTOM']),
   customSlideCount: z.number().int().min(1).max(60).optional(),
   language: z.enum(languageOptions),
-  template: z.enum([
-    'MINIMAL_MONO',
-    'BOLD_GRADIENT',
-    'EDITORIAL_SERIF',
-    'TECH_DARK',
-  ]),
+  template: z.enum(templateValues),
   imageStyle: z.enum(['REALISTIC', 'ILLUSTRATION', 'MINIMAL', 'THREE_D', 'NONE']),
   depth: z.enum(['HIGH_LEVEL', 'BALANCED', 'DETAILED']),
 })

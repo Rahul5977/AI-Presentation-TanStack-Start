@@ -1,3 +1,6 @@
+import { listTemplates } from '@/templates/registry'
+import { TEMPLATE_KINDS } from '@/templates/schema'
+
 export const audienceOptions = [
   { value: 'STUDENTS', label: 'Students' },
   { value: 'PROFESSIONALS', label: 'Professionals' },
@@ -29,12 +32,15 @@ export const languageOptions = [
   'German',
 ] as const
 
-export const templateOptions = [
-  { value: 'MINIMAL_MONO', label: 'Minimal Mono' },
-  { value: 'BOLD_GRADIENT', label: 'Bold Gradient' },
-  { value: 'EDITORIAL_SERIF', label: 'Editorial Serif' },
-  { value: 'TECH_DARK', label: 'Tech Dark' },
-] as const
+export const templateValues = TEMPLATE_KINDS
+
+export const templateOptions = listTemplates().map((template) => ({
+  value: template.metadata.id,
+  label: template.metadata.name,
+})) as ReadonlyArray<{
+  value: (typeof templateValues)[number]
+  label: string
+}>
 
 export const imageStyleOptions = [
   { value: 'REALISTIC', label: 'Realistic' },
@@ -54,6 +60,6 @@ export type AudienceValue = (typeof audienceOptions)[number]['value']
 export type ToneValue = (typeof toneOptions)[number]['value']
 export type LengthValue = (typeof lengthOptions)[number]['value']
 export type LanguageValue = (typeof languageOptions)[number]
-export type TemplateValue = (typeof templateOptions)[number]['value']
+export type TemplateValue = (typeof templateValues)[number]
 export type ImageStyleValue = (typeof imageStyleOptions)[number]['value']
 export type DepthValue = (typeof depthOptions)[number]['value']

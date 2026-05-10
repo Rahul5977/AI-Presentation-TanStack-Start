@@ -1,6 +1,10 @@
+import { Button } from '#/components/ui/button'
+import SlideRenderer from '@/components/slides/SlideRenderer'
 import { AUTH_LOGIN_PATH } from '@/lib/auth-path'
 import { getSession } from '@/lib/auth-function'
 import { createFileRoute, redirect } from '@tanstack/react-router'
+import { getTemplateByKind, listTemplates } from '@/templates/registry'
+import type { TemplateKind } from '@/templates/schema'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -8,6 +12,11 @@ type SlideProgress = {
   id: string
   position: number
   title: string
+  intent: string
+  bullets: unknown
+  visualConcept: string
+  speakerNotes: string | null
+  layoutHints: unknown
   status: 'PENDING' | 'CONTENT_READY' | 'IMAGE_READY' | 'READY' | 'FAILED'
   imageUrl: string | null
 }
@@ -16,6 +25,7 @@ type PresentationProgress = {
   presentationId: string
   title: string
   status: 'DRAFT' | 'QUEUED' | 'GENERATING' | 'READY' | 'FAILED'
+  template: TemplateKind
   slides: SlideProgress[]
 }
 
@@ -44,7 +54,9 @@ function PresentationProgressPage() {
   const { id } = Route.useParams()
   const [presentation, setPresentation] = useState<PresentationProgress | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isApplyingTemplate, setIsApplyingTemplate] = useState(false)
   const lastStatusRef = useRef<PresentationProgress['status'] | null>(null)
+  const templates = useMemo(() => listTemplates(), [])
 
   useEffect(() => {
     let mounted = true
@@ -172,6 +184,46 @@ function PresentationProgressPage() {
     return `${readyCount}/${presentation.slides.length} slides ready`
   }, [presentation])
 
+  const currentTemplate = useMemo(() => {
+    if (!presentation) return getTemplateByKind('MINIMAL_MONO')
+    return getTemplateByKind(presentation.template)
+  }, [presentation])
+
+  const applyTemplate = async (nextTemplate: TemplateKind) => {
+    if (!presentation) return
+    if (nextTemplate === presentation.template) return
+
+    try {
+      setIsApplyingTemplate(true)
+      const response = await fetch(`/api/presentations/${id}/template`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ template: nextTemplate }),
+      })
+      const payload = (await response.json()) as
+        | { presentationId: string; template: TemplateKind }
+        | { error: string }
+
+      if (!response.ok || 'error' in payload) {
+        throw new Error('error' in payload ? payload.error : 'Could not apply template.')
+      }
+
+      setPresentation((current) =>
+        current
+          ? {
+              ...current,
+              template: payload.template,
+            }
+          : current,
+      )
+      toast.success('Template applied.')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not apply template.')
+    } finally {
+      setIsApplyingTemplate(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <main className="mx-auto max-w-6xl px-4 pb-16 pt-24 sm:px-6 lg:px-8">
@@ -193,11 +245,35 @@ function PresentationProgressPage() {
   return (
     <main className="mx-auto max-w-6xl space-y-5 px-4 pb-16 pt-24 sm:px-6 lg:px-8">
       <header className="rounded-3xl border border-border/70 bg-card/90 p-5">
-        <h1 className="text-2xl font-semibold tracking-tight">{presentation.title}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Status: <span className="font-medium">{presentation.status}</span> ·{' '}
-          {completionSummary}
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">{presentation.title}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Status: <span className="font-medium">{presentation.status}</span> ·{' '}
+              {completionSummary}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {templates.map((template) => (
+              <Button
+                key={template.metadata.id}
+                type="button"
+                size="sm"
+                variant={
+                  presentation.template === template.metadata.id
+                    ? 'default'
+                    : 'outline'
+                }
+                disabled={isApplyingTemplate}
+                onClick={() => {
+                  void applyTemplate(template.metadata.id)
+                }}
+              >
+                {template.metadata.name}
+              </Button>
+            ))}
+          </div>
+        </div>
       </header>
 
       <section className="space-y-3">
@@ -216,6 +292,21 @@ function PresentationProgressPage() {
               <span className="rounded-full bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">
                 {slideStatusLabel[slide.status]}
               </span>
+            </div>
+            <div className="mt-4">
+              <SlideRenderer
+                slide={{
+                  id: slide.id,
+                  title: slide.title,
+                  intent: slide.intent,
+                  bullets: slide.bullets,
+                  visualConcept: slide.visualConcept,
+                  speakerNotes: slide.speakerNotes,
+                  layoutHints: slide.layoutHints,
+                  imageUrl: slide.imageUrl,
+                }}
+                template={currentTemplate}
+              />
             </div>
           </article>
         ))}
