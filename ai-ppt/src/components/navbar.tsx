@@ -1,7 +1,7 @@
 import { authClient } from '#/lib/auth-client'
 // import { cn } from '@/lib/utils'
 import { Link, useRouter } from '@tanstack/react-router'
-import { LogOut, Moon, Presentation, Sun, User } from 'lucide-react'
+import { BarChart3, LogOut, Moon, Presentation, Sun, User } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
 import { Button } from './ui/button'
@@ -64,6 +64,15 @@ export default function Navbar() {
 
           {/* Right side */}
           <div className="flex items-center gap-2">
+            {session?.user ? (
+              <Button asChild variant="ghost" size="sm" className="rounded-xl">
+                <Link to="/analytics" className="inline-flex items-center gap-1.5">
+                  <BarChart3 className="size-4" />
+                  Analytics
+                </Link>
+              </Button>
+            ) : null}
+
             {/* Theme toggle */}
             <Button
               variant="ghost"

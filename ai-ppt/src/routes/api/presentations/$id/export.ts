@@ -3,6 +3,8 @@ import { json } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 import { auth } from '@/lib/auth'
 import { exportPptx } from '@/server/presentations/export-service'
+import { assertQuota, quotaErrorMessage, recordUsage } from '@/server/usage/service'
+import { assertRateLimit, rateLimitErrorMessage } from '@/server/usage/rate-limit'
 
 export const Route = createFileRoute('/api/presentations/$id/export')({
   server: {
@@ -16,8 +18,31 @@ export const Route = createFileRoute('/api/presentations/$id/export')({
         const format = url.searchParams.get('format') ?? 'pptx'
 
         if (format === 'pptx') {
+          try {
+            await assertRateLimit({
+              userId: session.user.id,
+              bucket: 'export',
+            })
+          } catch (error) {
+            return json({ error: rateLimitErrorMessage(error) }, { status: 429 })
+          }
+
+          try {
+            await assertQuota(session.user.id, 'EXPORTS')
+          } catch (error) {
+            return json({ error: quotaErrorMessage(error) }, { status: 429 })
+          }
+
           const result = await exportPptx(session.user.id, params.id)
           if (!result) return json({ error: 'Presentation not found' }, { status: 404 })
+
+          await recordUsage({
+            userId: session.user.id,
+            presentationId: params.id,
+            metric: 'EXPORTS',
+            type: 'EXPORT_DOWNLOADED',
+            metadata: { format: 'pptx' },
+          })
 
           return new Response(new Uint8Array(result.buffer), {
             headers: {

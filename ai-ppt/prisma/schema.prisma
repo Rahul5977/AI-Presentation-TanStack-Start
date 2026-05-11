@@ -87,6 +87,39 @@ enum JobStatus {
   DEAD_LETTER
 }
 
+enum PresentationMemberRole {
+  EDITOR
+  VIEWER
+}
+
+enum SubscriptionPlan {
+  FREE
+  PRO
+}
+
+enum UsageMetric {
+  PRESENTATIONS_CREATED
+  SLIDES_GENERATED
+  EXPORTS
+  SOURCE_IMPORTS
+  SLIDE_ASSISTANT_REQUESTS
+}
+
+enum UsageEventType {
+  PRESENTATION_CREATED
+  SLIDE_GENERATION_STARTED
+  EXPORT_DOWNLOADED
+  SOURCE_IMPORTED
+  SLIDE_ASSISTANT_USED
+}
+
+// v1.1 scaffold for one-click text transforms.
+enum TextTransformAction {
+  MAKE_SHORTER
+  MORE_FORMAL
+  ADD_STATISTIC
+}
+
 model Test {
   id        String   @id @default(uuid())
   name      String
@@ -100,11 +133,15 @@ model User {
   email         String
   emailVerified Boolean   @default(false)
   image         String?
+  subscriptionPlan SubscriptionPlan @default(FREE)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
   presentations Presentation[]
+  presentationMembers PresentationMember[]
+  usageEvents   UsageEvent[]
+  usageCounters UserUsageCounter[]
 
   @@unique([email])
   @@map("user")
@@ -167,6 +204,8 @@ model Presentation {
   jobs             GenerationJob[]
   assets           Asset[]
   versions         PresentationVersion[]
+  members          PresentationMember[]
+  usageEvents      UsageEvent[]
   title            String
   prompt           String
   status           PresentationStatus   @default(DRAFT)
@@ -181,6 +220,10 @@ model Presentation {
   depth            DepthType            @default(BALANCED)
   shareToken       String?              @unique
   isPublic         Boolean              @default(false)
+  citationMode     Boolean              @default(false)
+  brandLogoUrl     String?
+  brandPrimaryColor String?
+  brandAccentColor String?
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
   lastEditedAt     DateTime             @default(now())
@@ -189,6 +232,21 @@ model Presentation {
   @@index([status, updatedAt(sort: Desc)])
   @@index([shareToken])
   @@map("presentation")
+}
+
+model PresentationMember {
+  id             String                 @id @default(cuid())
+  presentationId String
+  presentation   Presentation           @relation(fields: [presentationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           PresentationMemberRole @default(EDITOR)
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  @@unique([presentationId, userId])
+  @@index([userId])
+  @@map("presentation_member")
 }
 
 model PresentationVersion {
@@ -317,4 +375,37 @@ model Asset {
   @@index([presentationId, createdAt(sort: Desc)])
   @@index([slideId, createdAt(sort: Desc)])
   @@map("asset")
+}
+
+model UserUsageCounter {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  metric      UsageMetric
+  periodStart DateTime
+  periodEnd   DateTime
+  count       Int         @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([userId, metric, periodStart])
+  @@index([userId, periodStart])
+  @@map("user_usage_counter")
+}
+
+model UsageEvent {
+  id             String          @id @default(cuid())
+  userId         String
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  presentationId String?
+  presentation   Presentation?   @relation(fields: [presentationId], references: [id], onDelete: SetNull)
+  metric         UsageMetric
+  quantity       Int             @default(1)
+  type           UsageEventType
+  metadata       Json?
+  createdAt      DateTime        @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([type, createdAt(sort: Desc)])
+  @@map("usage_event")
 }

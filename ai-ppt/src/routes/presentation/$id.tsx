@@ -3,6 +3,7 @@ import SlideRenderer from '@/components/slides/SlideRenderer'
 import SlideEditorCard, {
   type EditableSlide,
 } from '@/components/editor/SlideEditorCard'
+import SlideAssistantPanel from '@/components/editor/SlideAssistantPanel'
 import ShareDialog from '@/components/editor/ShareDialog'
 import ExportDialog from '@/components/editor/ExportDialog'
 import VersionHistoryDialog from '@/components/editor/VersionHistoryDialog'
@@ -33,6 +34,7 @@ import {
   Plus,
   Presentation,
   Save,
+  Sparkles,
 } from 'lucide-react'
 
 // ─── types ─────────────────────────────────────────────────────────────────
@@ -88,6 +90,7 @@ function PresentationProgressPage() {
   const [showShare, setShowShare] = useState(false)
   const [showExport, setShowExport] = useState(false)
   const [showVersions, setShowVersions] = useState(false)
+  const [selectedSlideId, setSelectedSlideId] = useState<string | null>(null)
   const lastStatusRef = useRef<PresentationState['status'] | null>(null)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const templates = useMemo(() => listTemplates(), [])
@@ -104,6 +107,7 @@ function PresentationProgressPage() {
         throw new Error('error' in payload ? payload.error : 'Failed to load.')
       }
       setPresentation(payload)
+      setSelectedSlideId((current) => current ?? payload.slides[0]?.id ?? null)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not load presentation.')
     } finally {
@@ -124,6 +128,7 @@ function PresentationProgressPage() {
       if (!(e instanceof MessageEvent)) return
       const payload = JSON.parse(e.data) as PresentationState
       setPresentation(payload)
+      setSelectedSlideId((current) => current ?? payload.slides[0]?.id ?? null)
       lastStatusRef.current = payload.status
     })
 
@@ -150,6 +155,7 @@ function PresentationProgressPage() {
         }
         return cur
       })
+      setSelectedSlideId((current) => current)
     })
 
     source.onerror = () => source.close()
@@ -237,6 +243,16 @@ function PresentationProgressPage() {
     },
     [scheduleSave],
   )
+
+  const applyAssistantSlide = useCallback((updated: EditableSlide) => {
+    setPresentation((cur) =>
+      cur
+        ? { ...cur, slides: cur.slides.map((slide) => (slide.id === updated.id ? updated : slide)) }
+        : cur,
+    )
+    setSaveStatus('saved')
+    setTimeout(() => setSaveStatus('idle'), 2500)
+  }, [])
 
   const handleSlideDelete = useCallback(
     async (slideId: string) => {
@@ -412,7 +428,9 @@ function PresentationProgressPage() {
   }
 
   return (
-    <main className="mx-auto max-w-6xl space-y-5 px-4 pb-16 pt-24 sm:px-6 lg:px-8">
+    <main className="mx-auto max-w-7xl px-4 pb-16 pt-24 sm:px-6 lg:px-8">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+        <div className="space-y-5">
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <header className="rounded-3xl border border-border/70 bg-card/90 p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -485,6 +503,26 @@ function PresentationProgressPage() {
                 <Button size="sm" variant="ghost" onClick={() => setShowVersions(true)}>
                   <History size={14} className="mr-1.5" />
                   History
+                </Button>
+                <Button size="sm" variant="ghost" disabled title="Planned for v1.1">
+                  <Sparkles size={14} className="mr-1.5" />
+                  Quick actions (v1.1)
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() =>
+                    toast.info('Citation mode persistence is ready; full cited rendering ships in v1.1.')
+                  }
+                >
+                  Citation mode (v1.1)
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => toast.info('Brand kit controls are scaffolded for v1.1.')}
+                >
+                  Brand kit (v1.1)
                 </Button>
               </>
             )}
@@ -576,6 +614,18 @@ function PresentationProgressPage() {
           </button>
         </>
       )}
+        </div>
+
+        {isEditorMode ? (
+          <SlideAssistantPanel
+            presentationId={id}
+            slides={presentation.slides}
+            selectedSlideId={selectedSlideId ?? presentation.slides[0]?.id ?? null}
+            onSelectSlide={setSelectedSlideId}
+            onSlideApplied={applyAssistantSlide}
+          />
+        ) : null}
+      </div>
 
       {/* ── Dialogs ────────────────────────────────────────────────────── */}
       <ShareDialog

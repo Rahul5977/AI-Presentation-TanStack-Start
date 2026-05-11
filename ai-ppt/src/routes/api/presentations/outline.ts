@@ -7,6 +7,15 @@ import { auth } from '@/lib/auth'
 import { logger } from '@/server/logging/logger'
 import { createDraftFromInput } from '@/server/presentations/outline-service'
 import { normalizePresentationInput } from '@/server/presentations/schemas'
+import {
+  assertRateLimit,
+  rateLimitErrorMessage,
+} from '@/server/usage/rate-limit'
+import {
+  assertQuota,
+  quotaErrorMessage,
+  recordUsage,
+} from '@/server/usage/service'
 
 export const Route = createFileRoute('/api/presentations/outline')({
   server: {
@@ -29,7 +38,19 @@ export const Route = createFileRoute('/api/presentations/outline')({
         }
 
         try {
+          await assertRateLimit({
+            userId: session.user.id,
+            bucket: 'outline',
+          })
+          await assertQuota(session.user.id, 'PRESENTATIONS_CREATED')
           const draft = await createDraftFromInput(session.user.id, parsed.data)
+          await recordUsage({
+            userId: session.user.id,
+            metric: 'PRESENTATIONS_CREATED',
+            type: 'PRESENTATION_CREATED',
+            presentationId: draft.presentationId,
+            metadata: { sourceMode: 'manual' },
+          })
           return json(draft)
         } catch (error) {
           logger.error(
@@ -40,10 +61,14 @@ export const Route = createFileRoute('/api/presentations/outline')({
             'Outline generation failed',
           )
           const message =
-            error instanceof Error
-              ? error.message
-              : 'Failed to generate draft outline.'
-          return json({ error: message }, { status: 503 })
+            error instanceof Error && error.name === 'RateLimitError'
+              ? rateLimitErrorMessage(error)
+              : quotaErrorMessage(error)
+          const isQuota = message.startsWith('Quota reached') || message.startsWith('Rate limit')
+          return json(
+            { error: message },
+            { status: isQuota ? 429 : 503 },
+          )
         }
       },
     },

@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as HomeRouteImport } from './routes/home'
+import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthRouteRouteImport } from './routes/_auth/route'
 import { Route as IndexRouteImport } from './routes/index'
@@ -22,15 +23,21 @@ import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as ApiPresentationsIndexRouteImport } from './routes/api/presentations/index'
 import { Route as ApiShareTokenRouteImport } from './routes/api/share/$token'
 import { Route as ApiPresentationsOutlineRouteImport } from './routes/api/presentations/outline'
+import { Route as ApiPresentationsImportRouteImport } from './routes/api/presentations/import'
 import { Route as ApiPresentationsHistoryRouteImport } from './routes/api/presentations/history'
 import { Route as ApiHealthSystemRouteImport } from './routes/api/health/system'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiAnalyticsSummaryRouteImport } from './routes/api/analytics/summary'
 import { Route as ApiPresentationsIdIndexRouteImport } from './routes/api/presentations/$id/index'
 import { Route as ApiDraftsDraftIdIndexRouteImport } from './routes/api/drafts/$draftId/index'
+import { Route as ApiPresentationsIdTextActionsRouteImport } from './routes/api/presentations/$id/text-actions'
 import { Route as ApiPresentationsIdTemplateRouteImport } from './routes/api/presentations/$id/template'
 import { Route as ApiPresentationsIdShareRouteImport } from './routes/api/presentations/$id/share'
+import { Route as ApiPresentationsIdMembersRouteImport } from './routes/api/presentations/$id/members'
 import { Route as ApiPresentationsIdExportRouteImport } from './routes/api/presentations/$id/export'
 import { Route as ApiPresentationsIdEventsRouteImport } from './routes/api/presentations/$id/events'
+import { Route as ApiPresentationsIdCitationModeRouteImport } from './routes/api/presentations/$id/citation-mode'
+import { Route as ApiPresentationsIdBrandKitRouteImport } from './routes/api/presentations/$id/brand-kit'
 import { Route as ApiDraftsDraftIdRegenerateRouteImport } from './routes/api/drafts/$draftId/regenerate'
 import { Route as ApiDraftsDraftIdGenerateRouteImport } from './routes/api/drafts/$draftId/generate'
 import { Route as ApiPresentationsIdVersionsIndexRouteImport } from './routes/api/presentations/$id/versions/index'
@@ -44,10 +51,16 @@ import { Route as ApiPresentationsIdSlidesSlideIdRegenerateRouteImport } from '.
 import { Route as ApiPresentationsIdSlidesSlideIdImageUploadRouteImport } from './routes/api/presentations/$id/slides/$slideId/image-upload'
 import { Route as ApiPresentationsIdSlidesSlideIdImageRegenerateRouteImport } from './routes/api/presentations/$id/slides/$slideId/image-regenerate'
 import { Route as ApiPresentationsIdSlidesSlideIdDuplicateRouteImport } from './routes/api/presentations/$id/slides/$slideId/duplicate'
+import { Route as ApiPresentationsIdSlidesSlideIdChatRouteImport } from './routes/api/presentations/$id/slides/$slideId/chat'
 
 const HomeRoute = HomeRouteImport.update({
   id: '/home',
   path: '/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsRoute = AnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -109,6 +122,11 @@ const ApiPresentationsOutlineRoute = ApiPresentationsOutlineRouteImport.update({
   path: '/api/presentations/outline',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPresentationsImportRoute = ApiPresentationsImportRouteImport.update({
+  id: '/api/presentations/import',
+  path: '/api/presentations/import',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPresentationsHistoryRoute = ApiPresentationsHistoryRouteImport.update({
   id: '/api/presentations/history',
   path: '/api/presentations/history',
@@ -124,6 +142,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAnalyticsSummaryRoute = ApiAnalyticsSummaryRouteImport.update({
+  id: '/api/analytics/summary',
+  path: '/api/analytics/summary',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPresentationsIdIndexRoute = ApiPresentationsIdIndexRouteImport.update({
   id: '/api/presentations/$id/',
   path: '/api/presentations/$id/',
@@ -134,6 +157,12 @@ const ApiDraftsDraftIdIndexRoute = ApiDraftsDraftIdIndexRouteImport.update({
   path: '/api/drafts/$draftId/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPresentationsIdTextActionsRoute =
+  ApiPresentationsIdTextActionsRouteImport.update({
+    id: '/api/presentations/$id/text-actions',
+    path: '/api/presentations/$id/text-actions',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPresentationsIdTemplateRoute =
   ApiPresentationsIdTemplateRouteImport.update({
     id: '/api/presentations/$id/template',
@@ -145,6 +174,12 @@ const ApiPresentationsIdShareRoute = ApiPresentationsIdShareRouteImport.update({
   path: '/api/presentations/$id/share',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPresentationsIdMembersRoute =
+  ApiPresentationsIdMembersRouteImport.update({
+    id: '/api/presentations/$id/members',
+    path: '/api/presentations/$id/members',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPresentationsIdExportRoute =
   ApiPresentationsIdExportRouteImport.update({
     id: '/api/presentations/$id/export',
@@ -155,6 +190,18 @@ const ApiPresentationsIdEventsRoute =
   ApiPresentationsIdEventsRouteImport.update({
     id: '/api/presentations/$id/events',
     path: '/api/presentations/$id/events',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPresentationsIdCitationModeRoute =
+  ApiPresentationsIdCitationModeRouteImport.update({
+    id: '/api/presentations/$id/citation-mode',
+    path: '/api/presentations/$id/citation-mode',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPresentationsIdBrandKitRoute =
+  ApiPresentationsIdBrandKitRouteImport.update({
+    id: '/api/presentations/$id/brand-kit',
+    path: '/api/presentations/$id/brand-kit',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiDraftsDraftIdRegenerateRoute =
@@ -235,10 +282,17 @@ const ApiPresentationsIdSlidesSlideIdDuplicateRoute =
     path: '/api/presentations/$id/slides/$slideId/duplicate',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPresentationsIdSlidesSlideIdChatRoute =
+  ApiPresentationsIdSlidesSlideIdChatRouteImport.update({
+    id: '/api/presentations/$id/slides/$slideId/chat',
+    path: '/api/presentations/$id/slides/$slideId/chat',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/analytics': typeof AnalyticsRoute
   '/home': typeof HomeRoute
   '/login': typeof AuthLoginRoute
   '/api/db-health': typeof ApiDbHealthRoute
@@ -246,18 +300,24 @@ export interface FileRoutesByFullPath {
   '/present/$id': typeof PresentIdRoute
   '/presentation/$id': typeof PresentationIdRoute
   '/share/$token': typeof ShareTokenRoute
+  '/api/analytics/summary': typeof ApiAnalyticsSummaryRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/system': typeof ApiHealthSystemRoute
   '/api/presentations/history': typeof ApiPresentationsHistoryRoute
+  '/api/presentations/import': typeof ApiPresentationsImportRoute
   '/api/presentations/outline': typeof ApiPresentationsOutlineRoute
   '/api/share/$token': typeof ApiShareTokenRoute
   '/api/presentations/': typeof ApiPresentationsIndexRoute
   '/api/drafts/$draftId/generate': typeof ApiDraftsDraftIdGenerateRoute
   '/api/drafts/$draftId/regenerate': typeof ApiDraftsDraftIdRegenerateRoute
+  '/api/presentations/$id/brand-kit': typeof ApiPresentationsIdBrandKitRoute
+  '/api/presentations/$id/citation-mode': typeof ApiPresentationsIdCitationModeRoute
   '/api/presentations/$id/events': typeof ApiPresentationsIdEventsRoute
   '/api/presentations/$id/export': typeof ApiPresentationsIdExportRoute
+  '/api/presentations/$id/members': typeof ApiPresentationsIdMembersRoute
   '/api/presentations/$id/share': typeof ApiPresentationsIdShareRoute
   '/api/presentations/$id/template': typeof ApiPresentationsIdTemplateRoute
+  '/api/presentations/$id/text-actions': typeof ApiPresentationsIdTextActionsRoute
   '/api/drafts/$draftId/': typeof ApiDraftsDraftIdIndexRoute
   '/api/presentations/$id/': typeof ApiPresentationsIdIndexRoute
   '/api/drafts/$draftId/slides/$slideId': typeof ApiDraftsDraftIdSlidesSlideIdRoute
@@ -265,6 +325,7 @@ export interface FileRoutesByFullPath {
   '/api/drafts/$draftId/slides/': typeof ApiDraftsDraftIdSlidesIndexRoute
   '/api/presentations/$id/slides/': typeof ApiPresentationsIdSlidesIndexRoute
   '/api/presentations/$id/versions/': typeof ApiPresentationsIdVersionsIndexRoute
+  '/api/presentations/$id/slides/$slideId/chat': typeof ApiPresentationsIdSlidesSlideIdChatRoute
   '/api/presentations/$id/slides/$slideId/duplicate': typeof ApiPresentationsIdSlidesSlideIdDuplicateRoute
   '/api/presentations/$id/slides/$slideId/image-regenerate': typeof ApiPresentationsIdSlidesSlideIdImageRegenerateRoute
   '/api/presentations/$id/slides/$slideId/image-upload': typeof ApiPresentationsIdSlidesSlideIdImageUploadRoute
@@ -275,6 +336,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/analytics': typeof AnalyticsRoute
   '/home': typeof HomeRoute
   '/login': typeof AuthLoginRoute
   '/api/db-health': typeof ApiDbHealthRoute
@@ -282,18 +344,24 @@ export interface FileRoutesByTo {
   '/present/$id': typeof PresentIdRoute
   '/presentation/$id': typeof PresentationIdRoute
   '/share/$token': typeof ShareTokenRoute
+  '/api/analytics/summary': typeof ApiAnalyticsSummaryRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/system': typeof ApiHealthSystemRoute
   '/api/presentations/history': typeof ApiPresentationsHistoryRoute
+  '/api/presentations/import': typeof ApiPresentationsImportRoute
   '/api/presentations/outline': typeof ApiPresentationsOutlineRoute
   '/api/share/$token': typeof ApiShareTokenRoute
   '/api/presentations': typeof ApiPresentationsIndexRoute
   '/api/drafts/$draftId/generate': typeof ApiDraftsDraftIdGenerateRoute
   '/api/drafts/$draftId/regenerate': typeof ApiDraftsDraftIdRegenerateRoute
+  '/api/presentations/$id/brand-kit': typeof ApiPresentationsIdBrandKitRoute
+  '/api/presentations/$id/citation-mode': typeof ApiPresentationsIdCitationModeRoute
   '/api/presentations/$id/events': typeof ApiPresentationsIdEventsRoute
   '/api/presentations/$id/export': typeof ApiPresentationsIdExportRoute
+  '/api/presentations/$id/members': typeof ApiPresentationsIdMembersRoute
   '/api/presentations/$id/share': typeof ApiPresentationsIdShareRoute
   '/api/presentations/$id/template': typeof ApiPresentationsIdTemplateRoute
+  '/api/presentations/$id/text-actions': typeof ApiPresentationsIdTextActionsRoute
   '/api/drafts/$draftId': typeof ApiDraftsDraftIdIndexRoute
   '/api/presentations/$id': typeof ApiPresentationsIdIndexRoute
   '/api/drafts/$draftId/slides/$slideId': typeof ApiDraftsDraftIdSlidesSlideIdRoute
@@ -301,6 +369,7 @@ export interface FileRoutesByTo {
   '/api/drafts/$draftId/slides': typeof ApiDraftsDraftIdSlidesIndexRoute
   '/api/presentations/$id/slides': typeof ApiPresentationsIdSlidesIndexRoute
   '/api/presentations/$id/versions': typeof ApiPresentationsIdVersionsIndexRoute
+  '/api/presentations/$id/slides/$slideId/chat': typeof ApiPresentationsIdSlidesSlideIdChatRoute
   '/api/presentations/$id/slides/$slideId/duplicate': typeof ApiPresentationsIdSlidesSlideIdDuplicateRoute
   '/api/presentations/$id/slides/$slideId/image-regenerate': typeof ApiPresentationsIdSlidesSlideIdImageRegenerateRoute
   '/api/presentations/$id/slides/$slideId/image-upload': typeof ApiPresentationsIdSlidesSlideIdImageUploadRoute
@@ -313,6 +382,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_auth': typeof AuthRouteRouteWithChildren
   '/about': typeof AboutRoute
+  '/analytics': typeof AnalyticsRoute
   '/home': typeof HomeRoute
   '/_auth/login': typeof AuthLoginRoute
   '/api/db-health': typeof ApiDbHealthRoute
@@ -320,18 +390,24 @@ export interface FileRoutesById {
   '/present/$id': typeof PresentIdRoute
   '/presentation/$id': typeof PresentationIdRoute
   '/share/$token': typeof ShareTokenRoute
+  '/api/analytics/summary': typeof ApiAnalyticsSummaryRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/system': typeof ApiHealthSystemRoute
   '/api/presentations/history': typeof ApiPresentationsHistoryRoute
+  '/api/presentations/import': typeof ApiPresentationsImportRoute
   '/api/presentations/outline': typeof ApiPresentationsOutlineRoute
   '/api/share/$token': typeof ApiShareTokenRoute
   '/api/presentations/': typeof ApiPresentationsIndexRoute
   '/api/drafts/$draftId/generate': typeof ApiDraftsDraftIdGenerateRoute
   '/api/drafts/$draftId/regenerate': typeof ApiDraftsDraftIdRegenerateRoute
+  '/api/presentations/$id/brand-kit': typeof ApiPresentationsIdBrandKitRoute
+  '/api/presentations/$id/citation-mode': typeof ApiPresentationsIdCitationModeRoute
   '/api/presentations/$id/events': typeof ApiPresentationsIdEventsRoute
   '/api/presentations/$id/export': typeof ApiPresentationsIdExportRoute
+  '/api/presentations/$id/members': typeof ApiPresentationsIdMembersRoute
   '/api/presentations/$id/share': typeof ApiPresentationsIdShareRoute
   '/api/presentations/$id/template': typeof ApiPresentationsIdTemplateRoute
+  '/api/presentations/$id/text-actions': typeof ApiPresentationsIdTextActionsRoute
   '/api/drafts/$draftId/': typeof ApiDraftsDraftIdIndexRoute
   '/api/presentations/$id/': typeof ApiPresentationsIdIndexRoute
   '/api/drafts/$draftId/slides/$slideId': typeof ApiDraftsDraftIdSlidesSlideIdRoute
@@ -339,6 +415,7 @@ export interface FileRoutesById {
   '/api/drafts/$draftId/slides/': typeof ApiDraftsDraftIdSlidesIndexRoute
   '/api/presentations/$id/slides/': typeof ApiPresentationsIdSlidesIndexRoute
   '/api/presentations/$id/versions/': typeof ApiPresentationsIdVersionsIndexRoute
+  '/api/presentations/$id/slides/$slideId/chat': typeof ApiPresentationsIdSlidesSlideIdChatRoute
   '/api/presentations/$id/slides/$slideId/duplicate': typeof ApiPresentationsIdSlidesSlideIdDuplicateRoute
   '/api/presentations/$id/slides/$slideId/image-regenerate': typeof ApiPresentationsIdSlidesSlideIdImageRegenerateRoute
   '/api/presentations/$id/slides/$slideId/image-upload': typeof ApiPresentationsIdSlidesSlideIdImageUploadRoute
@@ -351,6 +428,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/analytics'
     | '/home'
     | '/login'
     | '/api/db-health'
@@ -358,18 +436,24 @@ export interface FileRouteTypes {
     | '/present/$id'
     | '/presentation/$id'
     | '/share/$token'
+    | '/api/analytics/summary'
     | '/api/auth/$'
     | '/api/health/system'
     | '/api/presentations/history'
+    | '/api/presentations/import'
     | '/api/presentations/outline'
     | '/api/share/$token'
     | '/api/presentations/'
     | '/api/drafts/$draftId/generate'
     | '/api/drafts/$draftId/regenerate'
+    | '/api/presentations/$id/brand-kit'
+    | '/api/presentations/$id/citation-mode'
     | '/api/presentations/$id/events'
     | '/api/presentations/$id/export'
+    | '/api/presentations/$id/members'
     | '/api/presentations/$id/share'
     | '/api/presentations/$id/template'
+    | '/api/presentations/$id/text-actions'
     | '/api/drafts/$draftId/'
     | '/api/presentations/$id/'
     | '/api/drafts/$draftId/slides/$slideId'
@@ -377,6 +461,7 @@ export interface FileRouteTypes {
     | '/api/drafts/$draftId/slides/'
     | '/api/presentations/$id/slides/'
     | '/api/presentations/$id/versions/'
+    | '/api/presentations/$id/slides/$slideId/chat'
     | '/api/presentations/$id/slides/$slideId/duplicate'
     | '/api/presentations/$id/slides/$slideId/image-regenerate'
     | '/api/presentations/$id/slides/$slideId/image-upload'
@@ -387,6 +472,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
+    | '/analytics'
     | '/home'
     | '/login'
     | '/api/db-health'
@@ -394,18 +480,24 @@ export interface FileRouteTypes {
     | '/present/$id'
     | '/presentation/$id'
     | '/share/$token'
+    | '/api/analytics/summary'
     | '/api/auth/$'
     | '/api/health/system'
     | '/api/presentations/history'
+    | '/api/presentations/import'
     | '/api/presentations/outline'
     | '/api/share/$token'
     | '/api/presentations'
     | '/api/drafts/$draftId/generate'
     | '/api/drafts/$draftId/regenerate'
+    | '/api/presentations/$id/brand-kit'
+    | '/api/presentations/$id/citation-mode'
     | '/api/presentations/$id/events'
     | '/api/presentations/$id/export'
+    | '/api/presentations/$id/members'
     | '/api/presentations/$id/share'
     | '/api/presentations/$id/template'
+    | '/api/presentations/$id/text-actions'
     | '/api/drafts/$draftId'
     | '/api/presentations/$id'
     | '/api/drafts/$draftId/slides/$slideId'
@@ -413,6 +505,7 @@ export interface FileRouteTypes {
     | '/api/drafts/$draftId/slides'
     | '/api/presentations/$id/slides'
     | '/api/presentations/$id/versions'
+    | '/api/presentations/$id/slides/$slideId/chat'
     | '/api/presentations/$id/slides/$slideId/duplicate'
     | '/api/presentations/$id/slides/$slideId/image-regenerate'
     | '/api/presentations/$id/slides/$slideId/image-upload'
@@ -424,6 +517,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_auth'
     | '/about'
+    | '/analytics'
     | '/home'
     | '/_auth/login'
     | '/api/db-health'
@@ -431,18 +525,24 @@ export interface FileRouteTypes {
     | '/present/$id'
     | '/presentation/$id'
     | '/share/$token'
+    | '/api/analytics/summary'
     | '/api/auth/$'
     | '/api/health/system'
     | '/api/presentations/history'
+    | '/api/presentations/import'
     | '/api/presentations/outline'
     | '/api/share/$token'
     | '/api/presentations/'
     | '/api/drafts/$draftId/generate'
     | '/api/drafts/$draftId/regenerate'
+    | '/api/presentations/$id/brand-kit'
+    | '/api/presentations/$id/citation-mode'
     | '/api/presentations/$id/events'
     | '/api/presentations/$id/export'
+    | '/api/presentations/$id/members'
     | '/api/presentations/$id/share'
     | '/api/presentations/$id/template'
+    | '/api/presentations/$id/text-actions'
     | '/api/drafts/$draftId/'
     | '/api/presentations/$id/'
     | '/api/drafts/$draftId/slides/$slideId'
@@ -450,6 +550,7 @@ export interface FileRouteTypes {
     | '/api/drafts/$draftId/slides/'
     | '/api/presentations/$id/slides/'
     | '/api/presentations/$id/versions/'
+    | '/api/presentations/$id/slides/$slideId/chat'
     | '/api/presentations/$id/slides/$slideId/duplicate'
     | '/api/presentations/$id/slides/$slideId/image-regenerate'
     | '/api/presentations/$id/slides/$slideId/image-upload'
@@ -462,24 +563,31 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
   AboutRoute: typeof AboutRoute
+  AnalyticsRoute: typeof AnalyticsRoute
   HomeRoute: typeof HomeRoute
   ApiDbHealthRoute: typeof ApiDbHealthRoute
   OutlineDraftIdRoute: typeof OutlineDraftIdRoute
   PresentIdRoute: typeof PresentIdRoute
   PresentationIdRoute: typeof PresentationIdRoute
   ShareTokenRoute: typeof ShareTokenRoute
+  ApiAnalyticsSummaryRoute: typeof ApiAnalyticsSummaryRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiHealthSystemRoute: typeof ApiHealthSystemRoute
   ApiPresentationsHistoryRoute: typeof ApiPresentationsHistoryRoute
+  ApiPresentationsImportRoute: typeof ApiPresentationsImportRoute
   ApiPresentationsOutlineRoute: typeof ApiPresentationsOutlineRoute
   ApiShareTokenRoute: typeof ApiShareTokenRoute
   ApiPresentationsIndexRoute: typeof ApiPresentationsIndexRoute
   ApiDraftsDraftIdGenerateRoute: typeof ApiDraftsDraftIdGenerateRoute
   ApiDraftsDraftIdRegenerateRoute: typeof ApiDraftsDraftIdRegenerateRoute
+  ApiPresentationsIdBrandKitRoute: typeof ApiPresentationsIdBrandKitRoute
+  ApiPresentationsIdCitationModeRoute: typeof ApiPresentationsIdCitationModeRoute
   ApiPresentationsIdEventsRoute: typeof ApiPresentationsIdEventsRoute
   ApiPresentationsIdExportRoute: typeof ApiPresentationsIdExportRoute
+  ApiPresentationsIdMembersRoute: typeof ApiPresentationsIdMembersRoute
   ApiPresentationsIdShareRoute: typeof ApiPresentationsIdShareRoute
   ApiPresentationsIdTemplateRoute: typeof ApiPresentationsIdTemplateRoute
+  ApiPresentationsIdTextActionsRoute: typeof ApiPresentationsIdTextActionsRoute
   ApiDraftsDraftIdIndexRoute: typeof ApiDraftsDraftIdIndexRoute
   ApiPresentationsIdIndexRoute: typeof ApiPresentationsIdIndexRoute
   ApiDraftsDraftIdSlidesSlideIdRoute: typeof ApiDraftsDraftIdSlidesSlideIdRoute
@@ -487,6 +595,7 @@ export interface RootRouteChildren {
   ApiDraftsDraftIdSlidesIndexRoute: typeof ApiDraftsDraftIdSlidesIndexRoute
   ApiPresentationsIdSlidesIndexRoute: typeof ApiPresentationsIdSlidesIndexRoute
   ApiPresentationsIdVersionsIndexRoute: typeof ApiPresentationsIdVersionsIndexRoute
+  ApiPresentationsIdSlidesSlideIdChatRoute: typeof ApiPresentationsIdSlidesSlideIdChatRoute
   ApiPresentationsIdSlidesSlideIdDuplicateRoute: typeof ApiPresentationsIdSlidesSlideIdDuplicateRoute
   ApiPresentationsIdSlidesSlideIdImageRegenerateRoute: typeof ApiPresentationsIdSlidesSlideIdImageRegenerateRoute
   ApiPresentationsIdSlidesSlideIdImageUploadRoute: typeof ApiPresentationsIdSlidesSlideIdImageUploadRoute
@@ -502,6 +611,13 @@ declare module '@tanstack/react-router' {
       path: '/home'
       fullPath: '/home'
       preLoaderRoute: typeof HomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics': {
+      id: '/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AnalyticsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -588,6 +704,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPresentationsOutlineRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/presentations/import': {
+      id: '/api/presentations/import'
+      path: '/api/presentations/import'
+      fullPath: '/api/presentations/import'
+      preLoaderRoute: typeof ApiPresentationsImportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/presentations/history': {
       id: '/api/presentations/history'
       path: '/api/presentations/history'
@@ -609,6 +732,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/analytics/summary': {
+      id: '/api/analytics/summary'
+      path: '/api/analytics/summary'
+      fullPath: '/api/analytics/summary'
+      preLoaderRoute: typeof ApiAnalyticsSummaryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/presentations/$id/': {
       id: '/api/presentations/$id/'
       path: '/api/presentations/$id'
@@ -621,6 +751,13 @@ declare module '@tanstack/react-router' {
       path: '/api/drafts/$draftId'
       fullPath: '/api/drafts/$draftId/'
       preLoaderRoute: typeof ApiDraftsDraftIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/presentations/$id/text-actions': {
+      id: '/api/presentations/$id/text-actions'
+      path: '/api/presentations/$id/text-actions'
+      fullPath: '/api/presentations/$id/text-actions'
+      preLoaderRoute: typeof ApiPresentationsIdTextActionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/presentations/$id/template': {
@@ -637,6 +774,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPresentationsIdShareRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/presentations/$id/members': {
+      id: '/api/presentations/$id/members'
+      path: '/api/presentations/$id/members'
+      fullPath: '/api/presentations/$id/members'
+      preLoaderRoute: typeof ApiPresentationsIdMembersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/presentations/$id/export': {
       id: '/api/presentations/$id/export'
       path: '/api/presentations/$id/export'
@@ -649,6 +793,20 @@ declare module '@tanstack/react-router' {
       path: '/api/presentations/$id/events'
       fullPath: '/api/presentations/$id/events'
       preLoaderRoute: typeof ApiPresentationsIdEventsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/presentations/$id/citation-mode': {
+      id: '/api/presentations/$id/citation-mode'
+      path: '/api/presentations/$id/citation-mode'
+      fullPath: '/api/presentations/$id/citation-mode'
+      preLoaderRoute: typeof ApiPresentationsIdCitationModeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/presentations/$id/brand-kit': {
+      id: '/api/presentations/$id/brand-kit'
+      path: '/api/presentations/$id/brand-kit'
+      fullPath: '/api/presentations/$id/brand-kit'
+      preLoaderRoute: typeof ApiPresentationsIdBrandKitRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/drafts/$draftId/regenerate': {
@@ -742,6 +900,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPresentationsIdSlidesSlideIdDuplicateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/presentations/$id/slides/$slideId/chat': {
+      id: '/api/presentations/$id/slides/$slideId/chat'
+      path: '/api/presentations/$id/slides/$slideId/chat'
+      fullPath: '/api/presentations/$id/slides/$slideId/chat'
+      preLoaderRoute: typeof ApiPresentationsIdSlidesSlideIdChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -761,24 +926,31 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRouteRoute: AuthRouteRouteWithChildren,
   AboutRoute: AboutRoute,
+  AnalyticsRoute: AnalyticsRoute,
   HomeRoute: HomeRoute,
   ApiDbHealthRoute: ApiDbHealthRoute,
   OutlineDraftIdRoute: OutlineDraftIdRoute,
   PresentIdRoute: PresentIdRoute,
   PresentationIdRoute: PresentationIdRoute,
   ShareTokenRoute: ShareTokenRoute,
+  ApiAnalyticsSummaryRoute: ApiAnalyticsSummaryRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiHealthSystemRoute: ApiHealthSystemRoute,
   ApiPresentationsHistoryRoute: ApiPresentationsHistoryRoute,
+  ApiPresentationsImportRoute: ApiPresentationsImportRoute,
   ApiPresentationsOutlineRoute: ApiPresentationsOutlineRoute,
   ApiShareTokenRoute: ApiShareTokenRoute,
   ApiPresentationsIndexRoute: ApiPresentationsIndexRoute,
   ApiDraftsDraftIdGenerateRoute: ApiDraftsDraftIdGenerateRoute,
   ApiDraftsDraftIdRegenerateRoute: ApiDraftsDraftIdRegenerateRoute,
+  ApiPresentationsIdBrandKitRoute: ApiPresentationsIdBrandKitRoute,
+  ApiPresentationsIdCitationModeRoute: ApiPresentationsIdCitationModeRoute,
   ApiPresentationsIdEventsRoute: ApiPresentationsIdEventsRoute,
   ApiPresentationsIdExportRoute: ApiPresentationsIdExportRoute,
+  ApiPresentationsIdMembersRoute: ApiPresentationsIdMembersRoute,
   ApiPresentationsIdShareRoute: ApiPresentationsIdShareRoute,
   ApiPresentationsIdTemplateRoute: ApiPresentationsIdTemplateRoute,
+  ApiPresentationsIdTextActionsRoute: ApiPresentationsIdTextActionsRoute,
   ApiDraftsDraftIdIndexRoute: ApiDraftsDraftIdIndexRoute,
   ApiPresentationsIdIndexRoute: ApiPresentationsIdIndexRoute,
   ApiDraftsDraftIdSlidesSlideIdRoute: ApiDraftsDraftIdSlidesSlideIdRoute,
@@ -786,6 +958,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiDraftsDraftIdSlidesIndexRoute: ApiDraftsDraftIdSlidesIndexRoute,
   ApiPresentationsIdSlidesIndexRoute: ApiPresentationsIdSlidesIndexRoute,
   ApiPresentationsIdVersionsIndexRoute: ApiPresentationsIdVersionsIndexRoute,
+  ApiPresentationsIdSlidesSlideIdChatRoute:
+    ApiPresentationsIdSlidesSlideIdChatRoute,
   ApiPresentationsIdSlidesSlideIdDuplicateRoute:
     ApiPresentationsIdSlidesSlideIdDuplicateRoute,
   ApiPresentationsIdSlidesSlideIdImageRegenerateRoute:

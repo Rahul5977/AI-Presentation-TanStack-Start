@@ -71,3 +71,73 @@ Each slide object must include:
 
   return parsed.data
 }
+
+export type SlideAssistantInput = {
+  instruction: string
+  slide: {
+    title: string
+    intent: string
+    bullets: string[]
+    speakerNotes?: string | null
+    visualConcept?: string
+  }
+  presentationTone?: string
+  presentationDepth?: string
+  language?: string
+}
+
+export async function improveSlideWithGemini(input: SlideAssistantInput) {
+  const ai = getClient()
+  const systemInstruction = `You are an expert presentation editor.
+Revise one slide according to the user instruction.
+Return strict JSON only with:
+- summary: one short sentence describing what changed
+- title
+- intent
+- bullets (2-8 items)
+- speakerNotes
+Do not include markdown.`
+
+  const response = await ai.models.generateContent({
+    model: textModel(),
+    contents: JSON.stringify(input),
+    config: {
+      systemInstruction,
+      responseMimeType: 'application/json',
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          summary: { type: Type.STRING },
+          title: { type: Type.STRING },
+          intent: { type: Type.STRING },
+          bullets: { type: Type.ARRAY, items: { type: Type.STRING } },
+          speakerNotes: { type: Type.STRING },
+        },
+        required: ['summary', 'title', 'intent', 'bullets', 'speakerNotes'],
+      },
+    },
+  })
+
+  const text = response.text
+  if (!text) throw new Error('Gemini returned empty slide assistant result.')
+
+  const parsed = JSON.parse(text) as {
+    summary: string
+    title: string
+    intent: string
+    bullets: string[]
+    speakerNotes: string
+  }
+
+  if (
+    !parsed.summary ||
+    !parsed.title ||
+    !parsed.intent ||
+    !Array.isArray(parsed.bullets) ||
+    parsed.bullets.length < 2
+  ) {
+    throw new Error('Gemini returned invalid slide assistant output.')
+  }
+
+  return parsed
+}

@@ -7,7 +7,10 @@ import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { motion } from 'framer-motion'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import type { PresentationFormValues } from '@/components/home/PromptComposer'
+import type {
+  PresentationFormValues,
+  SourceImportValues,
+} from '@/components/home/PromptComposer'
 import type { PresentationHistoryItem } from '@/components/home/PresentationHistorySidebar'
 
 import { getSession } from '#/lib/auth-function'
@@ -21,6 +24,13 @@ const defaultFormValues: PresentationFormValues = {
   template: 'MINIMAL_MONO',
   imageStyle: 'ILLUSTRATION',
   depth: 'BALANCED',
+}
+
+const defaultSourceValues: SourceImportValues = {
+  sourceMode: 'text',
+  sourceText: '',
+  sourceUrl: '',
+  sourceFile: null,
 }
 
 function normalizePresentationPayload(
@@ -70,6 +80,8 @@ function HomePage() {
   const [formValues, setFormValues] =
     useState<PresentationFormValues>(defaultFormValues)
   const [history, setHistory] = useState<PresentationHistoryItem[]>([])
+  const [sourceValues, setSourceValues] =
+    useState<SourceImportValues>(defaultSourceValues)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isHistoryLoading, setIsHistoryLoading] = useState(true)
 
@@ -105,12 +117,51 @@ function HomePage() {
     try {
       setIsSubmitting(true)
       const payload = normalizePresentationPayload(formValues)
-      const response = await fetch('/api/presentations/outline', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify(payload),
-      })
+      const isImportFlow =
+        (sourceValues.sourceMode === 'text' && sourceValues.sourceText.trim().length > 0) ||
+        (sourceValues.sourceMode === 'url' && sourceValues.sourceUrl.trim().length > 0) ||
+        (sourceValues.sourceMode === 'pdf' && !!sourceValues.sourceFile)
+
+      const response = isImportFlow
+        ? await (async () => {
+            const formData = new FormData()
+            formData.set('sourceMode', sourceValues.sourceMode)
+            formData.set('prompt', payload.prompt)
+            formData.set('audience', payload.audience)
+            formData.set('tone', payload.tone)
+            formData.set('lengthPreset', payload.lengthPreset)
+            formData.set('language', payload.language)
+            formData.set('template', payload.template)
+            formData.set('imageStyle', payload.imageStyle)
+            formData.set('depth', payload.depth)
+
+            if (payload.customSlideCount !== undefined) {
+              formData.set('customSlideCount', String(payload.customSlideCount))
+            }
+            if (payload.audienceCustom) {
+              formData.set('audienceCustom', payload.audienceCustom)
+            }
+
+            if (sourceValues.sourceMode === 'text') {
+              formData.set('sourceText', sourceValues.sourceText)
+            } else if (sourceValues.sourceMode === 'url') {
+              formData.set('sourceUrl', sourceValues.sourceUrl)
+            } else if (sourceValues.sourceMode === 'pdf' && sourceValues.sourceFile) {
+              formData.set('sourceFile', sourceValues.sourceFile)
+            }
+
+            return await fetch('/api/presentations/import', {
+              method: 'POST',
+              body: formData,
+              credentials: 'same-origin',
+            })
+          })()
+        : await fetch('/api/presentations/outline', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(payload),
+          })
       const result = (await response.json()) as {
         error?: string
         draftId?: string
@@ -137,6 +188,7 @@ function HomePage() {
       }
       toast.success('Outline draft created.')
       setFormValues(defaultFormValues)
+      setSourceValues(defaultSourceValues)
       await loadHistory()
       await navigate({
         to: '/outline/$draftId',
@@ -147,7 +199,7 @@ function HomePage() {
     } finally {
       setIsSubmitting(false)
     }
-  }, [formValues, loadHistory, navigate])
+  }, [formValues, loadHistory, navigate, sourceValues])
 
   return (
     <main className="relative min-h-screen overflow-hidden px-4 pb-16 pt-24 sm:px-6 lg:px-8">
@@ -163,6 +215,8 @@ function HomePage() {
           <PromptComposer
             values={formValues}
             onChange={setFormValues}
+            sourceValues={sourceValues}
+            onSourceChange={setSourceValues}
             onSubmit={handleGenerate}
             isSubmitting={isSubmitting}
           />
@@ -175,7 +229,10 @@ function HomePage() {
         >
           <PresentationHistorySidebar
             items={isHistoryLoading ? [] : history}
-            onNewPresentation={() => setFormValues(defaultFormValues)}
+            onNewPresentation={() => {
+              setFormValues(defaultFormValues)
+              setSourceValues(defaultSourceValues)
+            }}
           />
         </motion.section>
       </div>

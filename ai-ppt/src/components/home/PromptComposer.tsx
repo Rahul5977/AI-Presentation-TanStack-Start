@@ -19,7 +19,7 @@ import type {
   ToneValue,
 } from '@/lib/presentation-options'
 import { listTemplates } from '@/templates/registry'
-import { ArrowRight, WandSparkles } from 'lucide-react'
+import { ArrowRight, FileText, Globe, Type, WandSparkles } from 'lucide-react'
 import { useCallback, useRef } from 'react'
 
 export type PresentationFormValues = {
@@ -35,9 +35,20 @@ export type PresentationFormValues = {
   depth: DepthValue
 }
 
+export type SourceImportMode = 'text' | 'url' | 'pdf'
+
+export type SourceImportValues = {
+  sourceMode: SourceImportMode
+  sourceText: string
+  sourceUrl: string
+  sourceFile: File | null
+}
+
 type PromptComposerProps = {
   values: PresentationFormValues
   onChange: (nextValues: PresentationFormValues) => void
+  sourceValues: SourceImportValues
+  onSourceChange: (nextValues: SourceImportValues) => void
   onSubmit: () => void
   isSubmitting: boolean
 }
@@ -45,6 +56,8 @@ type PromptComposerProps = {
 export default function PromptComposer({
   values,
   onChange,
+  sourceValues,
+  onSourceChange,
   onSubmit,
   isSubmitting,
 }: PromptComposerProps) {
@@ -83,6 +96,19 @@ export default function PromptComposer({
     el.style.height = '0px'
     el.style.height = `${Math.min(el.scrollHeight, 280)}px`
   }, [])
+
+  const updateSource = useCallback(
+    <TKey extends keyof SourceImportValues>(
+      key: TKey,
+      value: SourceImportValues[TKey],
+    ) => {
+      onSourceChange({
+        ...sourceValues,
+        [key]: value,
+      })
+    },
+    [onSourceChange, sourceValues],
+  )
 
   return (
     <section className="overflow-hidden rounded-[2rem] border border-border/60 bg-card/90 shadow-2xl shadow-black/5 ring-1 ring-white/10 backdrop-blur dark:shadow-black/30">
@@ -123,6 +149,71 @@ export default function PromptComposer({
             placeholder="Example: Build a persuasive 10-slide pitch deck for an AI study assistant for college students, with clear market sizing and demo flow."
             className="w-full resize-none rounded-3xl border border-border/70 bg-background/80 px-5 py-4 text-base leading-7 text-foreground shadow-inner outline-none transition placeholder:text-muted-foreground/70 focus:border-primary/60 focus:ring-4 focus:ring-primary/15"
           />
+        </div>
+
+        <div className="space-y-3 rounded-3xl border border-border/60 bg-muted/20 p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            Import source (v1)
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {([
+              ['text', 'Long text', Type],
+              ['url', 'URL', Globe],
+              ['pdf', 'PDF', FileText],
+            ] as const).map(([mode, label, Icon]) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => updateSource('sourceMode', mode)}
+                className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition ${
+                  sourceValues.sourceMode === mode
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-background text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Icon className="size-4" />
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {sourceValues.sourceMode === 'text' ? (
+            <textarea
+              value={sourceValues.sourceText}
+              onChange={(e) => updateSource('sourceText', e.target.value)}
+              rows={4}
+              placeholder="Paste long source text. The AI will extract key points into slides."
+              className="w-full resize-y rounded-2xl border border-border/70 bg-background/80 px-4 py-3 text-sm outline-none transition placeholder:text-muted-foreground/70 focus:border-primary/60 focus:ring-4 focus:ring-primary/15"
+            />
+          ) : null}
+
+          {sourceValues.sourceMode === 'url' ? (
+            <input
+              value={sourceValues.sourceUrl}
+              onChange={(e) => updateSource('sourceUrl', e.target.value)}
+              type="url"
+              placeholder="https://example.com/article"
+              className="h-11 w-full rounded-2xl border border-border/70 bg-background/80 px-4 text-sm outline-none transition placeholder:text-muted-foreground focus:border-primary/60 focus:ring-4 focus:ring-primary/15"
+            />
+          ) : null}
+
+          {sourceValues.sourceMode === 'pdf' ? (
+            <div className="space-y-2">
+              <input
+                type="file"
+                accept="application/pdf"
+                onChange={(e) =>
+                  updateSource('sourceFile', e.target.files?.[0] ?? null)
+                }
+                className="block w-full cursor-pointer rounded-2xl border border-border/70 bg-background/80 px-4 py-3 text-sm text-muted-foreground"
+              />
+              {sourceValues.sourceFile ? (
+                <p className="text-xs text-muted-foreground">
+                  Selected: {sourceValues.sourceFile.name}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
         <div className="grid gap-6">

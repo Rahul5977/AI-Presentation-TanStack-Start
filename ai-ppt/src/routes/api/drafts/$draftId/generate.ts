@@ -13,6 +13,12 @@ import {
   publishSlideContentJob,
   publishSlideImageJob,
 } from '@/server/queue/publish'
+import {
+  assertQuota,
+  quotaErrorMessage,
+  recordUsage,
+} from '@/server/usage/service'
+import { assertRateLimit, rateLimitErrorMessage } from '@/server/usage/rate-limit'
 
 type PendingPublishJob =
   | {
@@ -36,6 +42,15 @@ export const Route = createFileRoute('/api/drafts/$draftId/generate')({
         const session = await auth.api.getSession({ headers })
         if (!session) {
           return json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        try {
+          await assertRateLimit({
+            userId: session.user.id,
+            bucket: 'generate',
+          })
+        } catch (error) {
+          return json({ error: rateLimitErrorMessage(error) }, { status: 429 })
         }
 
         const draft = await prisma.draft.findFirst({
@@ -63,6 +78,16 @@ export const Route = createFileRoute('/api/drafts/$draftId/generate')({
 
         if (draft.slides.length === 0) {
           return json({ error: 'Draft has no slides to generate.' }, { status: 400 })
+        }
+
+        try {
+          await assertQuota(
+            session.user.id,
+            'SLIDES_GENERATED',
+            draft.slides.length,
+          )
+        } catch (error) {
+          return json({ error: quotaErrorMessage(error) }, { status: 429 })
         }
 
         if (
@@ -254,6 +279,15 @@ export const Route = createFileRoute('/api/drafts/$draftId/generate')({
             error instanceof Error ? error.message : 'Failed to publish generation jobs.'
           return json({ error: message }, { status: 503 })
         }
+
+        await recordUsage({
+          userId: session.user.id,
+          metric: 'SLIDES_GENERATED',
+          quantity: draft.slides.length,
+          type: 'SLIDE_GENERATION_STARTED',
+          presentationId,
+          metadata: { draftId: params.draftId, slideCount: draft.slides.length },
+        })
 
         return json({ presentationId })
       },
