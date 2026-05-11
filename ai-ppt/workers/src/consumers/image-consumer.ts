@@ -1,7 +1,8 @@
 import { publishSlideImageUploadJob } from '../../../src/server/queue/publish'
 import { QUEUE_NAMES } from '../../../src/server/queue/queues'
 import { consumeJsonQueue } from '../lib/rabbit'
-import { generateSlideImageBase64 } from '../lib/gemini'
+import { generateSlideImageBase64 as generateSlideImageWithImagen } from '../lib/gemini'
+import { generateSlideImageBase64 as generateSlideImageWithOpenAI } from '../lib/openai'
 import { prisma } from '../lib/prisma'
 import { publishProgressEvent } from '../lib/redis'
 
@@ -13,6 +14,27 @@ type ImageMessage = {
   attempt: number
   visualConcept: string
   imageStyle: string
+}
+
+type ImageProvider = 'imagen' | 'openai'
+
+function resolveImageProvider(): ImageProvider {
+  const raw =
+    process.env.IMAGE_PROVIDER ??
+    process.env.AI_PROVIDER ??
+    'imagen'
+  return raw.toLowerCase() === 'openai' ? 'openai' : 'imagen'
+}
+
+async function generateSlideImageBase64(input: {
+  visualConcept: string
+  imageStyle: string
+  imagePrompt?: string
+}) {
+  if (resolveImageProvider() === 'openai') {
+    return await generateSlideImageWithOpenAI(input)
+  }
+  return await generateSlideImageWithImagen(input)
 }
 
 export async function startImageConsumer() {

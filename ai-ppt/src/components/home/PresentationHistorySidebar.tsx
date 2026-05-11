@@ -12,6 +12,7 @@ export type PresentationHistoryItem = {
 type PresentationHistorySidebarProps = {
   items: PresentationHistoryItem[]
   onNewPresentation: () => void
+  onOpenPresentation: (presentationId: string) => void
 }
 
 const statusClasses: Record<PresentationHistoryItem['status'], string> = {
@@ -25,6 +26,7 @@ const statusClasses: Record<PresentationHistoryItem['status'], string> = {
 export default function PresentationHistorySidebar({
   items,
   onNewPresentation,
+  onOpenPresentation,
 }: PresentationHistorySidebarProps) {
   return (
     <aside className="sticky top-24 rounded-[2rem] border border-border/60 bg-card/90 p-5 shadow-2xl shadow-black/5 ring-1 ring-white/10 backdrop-blur dark:shadow-black/30">
@@ -62,9 +64,11 @@ export default function PresentationHistorySidebar({
           </div>
         ) : (
           items.map((item) => (
-            <article
+            <button
               key={item.id}
-              className="rounded-3xl border border-border/70 bg-background/70 p-4 transition hover:border-primary/30 hover:bg-background"
+              type="button"
+              onClick={() => onOpenPresentation(item.id)}
+              className="w-full rounded-3xl border border-border/70 bg-background/70 p-4 text-left transition hover:border-primary/30 hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               <div className="flex items-start justify-between gap-2">
                 <h3 className="line-clamp-2 text-sm font-semibold leading-5 text-foreground">
@@ -86,7 +90,7 @@ export default function PresentationHistorySidebar({
                   timeStyle: 'short',
                 })}
               </p>
-            </article>
+            </button>
           ))
         )}
       </div>

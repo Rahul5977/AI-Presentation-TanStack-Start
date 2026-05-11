@@ -2,15 +2,29 @@ services:
   web:
     build:
       context: .
-      dockerfile: Dockerfile.web
+      dockerfile: Dockerfile.dev
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"]
     ports:
       - "3000:3000"
     environment:
+      NODE_ENV: development
       DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/aippt?sslmode=disable"
       DIRECT_URL: "postgresql://postgres:postgres@postgres:5432/aippt?sslmode=disable"
       RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672"
       REDIS_URL: "redis://redis:6379"
-      BETTER_AUTH_URL: "http://localhost:3000"
+      BETTER_AUTH_URL: "${BETTER_AUTH_URL:-http://localhost:3000}"
+      GITHUB_CLIENT_ID: "${GITHUB_CLIENT_ID:-}"
+      GITHUB_CLIENT_SECRET: "${GITHUB_CLIENT_SECRET:-}"
+      GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID:-}"
+      GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET:-}"
+      GOOGLE_CALLBACK_URL: "${GOOGLE_CALLBACK_URL:-http://localhost:3000/api/auth/callback/google}"
+      AI_PROVIDER: "${AI_PROVIDER:-gemini}"
+      TEXT_PROVIDER: "${TEXT_PROVIDER:-gemini}"
+      OUTLINE_PROVIDER: "${OUTLINE_PROVIDER:-gemini}"
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      GEMINI_MODEL: "${GEMINI_MODEL:-gemini-2.5-pro}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      OPENAI_OUTLINE_MODEL: "${OPENAI_OUTLINE_MODEL:-gpt-4.1-mini}"
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -20,12 +34,13 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+    restart: unless-stopped
 
   migrate:
     build:
       context: .
-      dockerfile: Dockerfile.web
-    command: ["npm", "run", "db:push"]
+      dockerfile: Dockerfile.dev
+    command: ["npm", "run", "db:push", "--", "--accept-data-loss"]
     environment:
       DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/aippt?sslmode=disable"
       DIRECT_URL: "postgresql://postgres:postgres@postgres:5432/aippt?sslmode=disable"
@@ -45,10 +60,20 @@ services:
       GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
       GEMINI_MODEL: "${GEMINI_MODEL:-gemini-2.5-pro}"
       IMAGEN_MODEL: "${IMAGEN_MODEL:-imagen-4.0-generate-001}"
+      AI_PROVIDER: "${AI_PROVIDER:-gemini}"
+      TEXT_PROVIDER: "${TEXT_PROVIDER:-gemini}"
+      IMAGE_PROVIDER: "${IMAGE_PROVIDER:-imagen}"
       OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      OPENAI_OUTLINE_MODEL: "${OPENAI_OUTLINE_MODEL:-gpt-4.1-mini}"
+      OPENAI_SLIDE_MODEL: "${OPENAI_SLIDE_MODEL:-gpt-4.1-mini}"
+      OPENAI_IMAGE_MODEL: "${OPENAI_IMAGE_MODEL:-gpt-image-1}"
+      OPENAI_IMAGE_QUALITY: "${OPENAI_IMAGE_QUALITY:-low}"
+      OPENAI_IMAGE_SIZE: "${OPENAI_IMAGE_SIZE:-1536x1024}"
       IMAGEKIT_PUBLIC_KEY: "${IMAGEKIT_PUBLIC_KEY:-}"
       IMAGEKIT_PRIVATE_KEY: "${IMAGEKIT_PRIVATE_KEY:-}"
       IMAGEKIT_URL_ENDPOINT: "${IMAGEKIT_URL_ENDPOINT:-}"
+      WORKER_CLASSES: "${WORKER_CLASSES:-content,image,upload,finalize}"
+      
     depends_on:
       postgres:
         condition: service_healthy
@@ -56,6 +81,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+    restart: unless-stopped
     deploy:
       replicas: 2
 
@@ -74,6 +100,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    restart: unless-stopped
 
   rabbitmq:
     image: rabbitmq:3.13-management
@@ -85,11 +112,13 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
     ports:
       - "6380:6379"
+    restart: unless-stopped
 
 volumes:
   pg_data:

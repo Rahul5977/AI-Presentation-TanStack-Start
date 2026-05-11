@@ -101,11 +101,15 @@ export async function generateSlideImageBase64(input: {
 }) {
   const client = getOpenAIClient()
   const prompt = `${input.imagePrompt ?? input.visualConcept}. Image style: ${input.imageStyle}.`
+  const imageModel = process.env.OPENAI_IMAGE_MODEL ?? 'gpt-image-1'
+  const quality = process.env.OPENAI_IMAGE_QUALITY ?? 'low'
+  const size = process.env.OPENAI_IMAGE_SIZE ?? '1536x1024'
 
   const response = await client.images.generate({
-    model: process.env.OPENAI_IMAGE_MODEL ?? 'gpt-image-1',
+    model: imageModel,
     prompt,
-    size: '1536x1024',
+    quality,
+    size,
   })
 
   const base64 = response.data?.[0]?.b64_json

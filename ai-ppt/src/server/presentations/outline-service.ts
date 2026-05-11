@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db'
 import { generateOutlineWithGemini } from '@/server/ai/gemini'
+import { generateOutlineWithOpenAI } from '@/server/ai/openai'
 import type { PresentationInput } from '@/server/presentations/schemas'
 
 type DraftSlideRecord = {
@@ -10,6 +11,25 @@ type DraftSlideRecord = {
   bullets: string[]
   visualConcept: string
   speakerNotesHint: string | null
+}
+
+type OutlineProvider = 'gemini' | 'openai'
+
+function resolveOutlineProvider(): OutlineProvider {
+  const raw =
+    process.env.OUTLINE_PROVIDER ??
+    process.env.TEXT_PROVIDER ??
+    process.env.AI_PROVIDER ??
+    'gemini'
+  return raw.toLowerCase() === 'openai' ? 'openai' : 'gemini'
+}
+
+async function generateOutline(input: PresentationInput) {
+  const provider = resolveOutlineProvider()
+  if (provider === 'openai') {
+    return await generateOutlineWithOpenAI(input)
+  }
+  return await generateOutlineWithGemini(input)
 }
 
 export type DraftWithSlides = {
@@ -30,7 +50,7 @@ export async function createDraftFromInput(
   userId: string,
   input: PresentationInput,
 ): Promise<DraftWithSlides> {
-  const outline = await generateOutlineWithGemini(input)
+  const outline = await generateOutline(input)
 
   const created = await prisma.presentation.create({
     data: {
@@ -189,7 +209,7 @@ export async function regenerateDraftOutline(
     throw new Error('Draft not found.')
   }
 
-  const outline = await generateOutlineWithGemini({
+  const outline = await generateOutline({
     prompt: draft.prompt,
     audience: draft.audience,
     audienceCustom: draft.audienceCustom ?? undefined,

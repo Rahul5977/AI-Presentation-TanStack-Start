@@ -1,5 +1,6 @@
 import { QUEUE_NAMES } from '../../../src/server/queue/queues'
 import { consumeJsonQueue, enqueueJson } from '../lib/rabbit'
+import { logger } from '../lib/logger'
 import { prisma } from '../lib/prisma'
 import { publishProgressEvent } from '../lib/redis'
 
@@ -15,6 +16,42 @@ export async function startFinalizeConsumer() {
     process.env.FINALIZE_RECHECK_MS ?? '5000',
     10,
   )
+
+  const staleJobs = await prisma.generationJob.findMany({
+    where: {
+      type: 'PRESENTATION_FINALIZE',
+      status: 'PENDING',
+      availableAt: { lte: new Date() },
+    },
+    select: {
+      id: true,
+      presentationId: true,
+      idempotencyKey: true,
+      attempt: true,
+    },
+    orderBy: { createdAt: 'asc' },
+    take: 100,
+  })
+
+  for (const job of staleJobs) {
+    await enqueueJson(
+      QUEUE_NAMES.presentationFinalize,
+      {
+        presentationId: job.presentationId,
+        jobId: job.id,
+        idempotencyKey: job.idempotencyKey,
+        attempt: job.attempt,
+      },
+      {
+        messageId: job.id,
+        correlationId: job.presentationId,
+      },
+    )
+  }
+
+  if (staleJobs.length > 0) {
+    logger.info({ count: staleJobs.length }, 'Requeued stale finalize jobs')
+  }
 
   await consumeJsonQueue<FinalizeMessage>(
     QUEUE_NAMES.presentationFinalize,
@@ -40,7 +77,9 @@ export async function startFinalizeConsumer() {
           presentationId: payload.presentationId,
         },
         select: {
+          id: true,
           status: true,
+          imageUrl: true,
         },
       })
 
@@ -48,9 +87,29 @@ export async function startFinalizeConsumer() {
         throw new Error('No slides found for presentation.')
       }
 
-      const hasFailed = slides.some((slide) => slide.status === 'FAILED')
-      const allReady = slides.every((slide) => slide.status === 'READY')
-      const readyCount = slides.filter((slide) => slide.status === 'READY').length
+      const recoverableReadyIds = slides
+        .filter((slide) => slide.status === 'CONTENT_READY' && Boolean(slide.imageUrl))
+        .map((slide) => slide.id)
+
+      if (recoverableReadyIds.length > 0) {
+        await prisma.slide.updateMany({
+          where: { id: { in: recoverableReadyIds } },
+          data: {
+            status: 'READY',
+            readyAt: new Date(),
+          },
+        })
+      }
+
+      const effectiveSlides = slides.map((slide) =>
+        recoverableReadyIds.includes(slide.id)
+          ? { ...slide, status: 'READY' as const }
+          : slide,
+      )
+
+      const hasFailed = effectiveSlides.some((slide) => slide.status === 'FAILED')
+      const allReady = effectiveSlides.every((slide) => slide.status === 'READY')
+      const readyCount = effectiveSlides.filter((slide) => slide.status === 'READY').length
 
       if (!allReady && !hasFailed) {
         await prisma.$transaction([
@@ -72,7 +131,7 @@ export async function startFinalizeConsumer() {
           stage: 'finalizing',
           status: 'GENERATING',
           readyCount,
-          totalSlides: slides.length,
+          totalSlides: effectiveSlides.length,
         })
 
         await enqueueJson(
@@ -111,7 +170,7 @@ export async function startFinalizeConsumer() {
         stage: 'finalized',
         status: nextStatus,
         readyCount,
-        totalSlides: slides.length,
+        totalSlides: effectiveSlides.length,
       })
     },
   )

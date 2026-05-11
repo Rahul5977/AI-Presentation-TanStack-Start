@@ -1,5 +1,3 @@
-import pdf from 'pdf-parse'
-
 const MAX_SOURCE_CHARS = 24_000
 
 function truncate(text: string, max = MAX_SOURCE_CHARS) {
@@ -60,7 +58,13 @@ export async function extractImportSource(input: ImportSourceInput): Promise<{
   }
 
   const buffer = Buffer.from(await input.file.arrayBuffer())
-  const parsed = await pdf(buffer)
+  const pdfModule = await import('pdf-parse')
+  const parsePdf = (
+    'default' in pdfModule && typeof pdfModule.default === 'function'
+      ? pdfModule.default
+      : (pdfModule as unknown as (buffer: Buffer) => Promise<{ text?: string }>)
+  )
+  const parsed = await parsePdf(buffer)
   const sourceText = truncate(sanitizeWhitespace(parsed.text ?? ''))
   if (!sourceText) {
     throw new Error('No readable text found in the uploaded PDF.')

@@ -1,6 +1,7 @@
 import { QUEUE_NAMES } from '../../../src/server/queue/queues'
 import { consumeJsonQueue } from '../lib/rabbit'
-import { generateSlideContent } from '../lib/gemini'
+import { generateSlideContent as generateSlideContentWithGemini } from '../lib/gemini'
+import { generateSlideContent as generateSlideContentWithOpenAI } from '../lib/openai'
 import { prisma } from '../lib/prisma'
 import { publishProgressEvent } from '../lib/redis'
 
@@ -14,6 +15,33 @@ type ContentMessage = {
   tone: string
   depth: string
   language: string
+}
+
+type ContentProvider = 'gemini' | 'openai'
+
+function resolveContentProvider(): ContentProvider {
+  const raw =
+    process.env.CONTENT_PROVIDER ??
+    process.env.TEXT_PROVIDER ??
+    process.env.AI_PROVIDER ??
+    'gemini'
+  return raw.toLowerCase() === 'openai' ? 'openai' : 'gemini'
+}
+
+async function generateSlideContent(input: {
+  prompt: string
+  language: string
+  tone: string
+  depth: string
+  title: string
+  intent: string
+  bullets: string[]
+  visualConcept: string
+}) {
+  if (resolveContentProvider() === 'openai') {
+    return await generateSlideContentWithOpenAI(input)
+  }
+  return await generateSlideContentWithGemini(input)
 }
 
 export async function startContentConsumer() {
@@ -64,7 +92,11 @@ export async function startContentConsumer() {
         visualConcept: slide.visualConcept,
       })
 
-      const nextStatus = slide.presentation.imageStyle === 'NONE' ? 'READY' : 'CONTENT_READY'
+      const hasImageAlready = Boolean(slide.imageUrl || slide.imageAssetId)
+      const nextStatus =
+        slide.presentation.imageStyle === 'NONE' || hasImageAlready
+          ? 'READY'
+          : 'CONTENT_READY'
 
       await prisma.$transaction([
         prisma.slide.update({

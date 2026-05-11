@@ -233,6 +233,12 @@ function HomePage() {
               setFormValues(defaultFormValues)
               setSourceValues(defaultSourceValues)
             }}
+            onOpenPresentation={(presentationId) => {
+              void navigate({
+                to: '/presentation/$id',
+                params: { id: presentationId },
+              })
+            }}
           />
         </motion.section>
       </div>

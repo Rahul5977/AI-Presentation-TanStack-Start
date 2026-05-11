@@ -1,5 +1,3 @@
-import 'dotenv/config'
-
 import { startContentConsumer } from './consumers/content-consumer'
 import { startFinalizeConsumer } from './consumers/finalize-consumer'
 import { startImageConsumer } from './consumers/image-consumer'
