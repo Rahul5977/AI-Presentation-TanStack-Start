@@ -55,3 +55,46 @@ Each primary queue also has a retry queue (`*.retry`) with TTL-based redelivery 
 - Health endpoint `/api/health/system` checks DB, RabbitMQ, and Redis.
 - Graceful shutdown support in worker (`SIGTERM`/`SIGINT`).
 - Durable queues and persisted job state enable crash recovery and diagnostics.
+
+## Production deployment model (Hostinger VPS)
+
+- `docker-compose.prod.yml` defines separated production services:
+  - `caddy` for automatic HTTPS and reverse proxy.
+  - `web` for UI/API.
+  - worker classes (`worker-content`, `worker-image`, `worker-finalize`) split by responsibility.
+  - `migrate` as one-shot profile service (`prisma migrate deploy`).
+- Migration is not executed on web boot. Deploy order is:
+  1. Start infra (`postgres`, `rabbitmq`, `redis`).
+  2. Run one-shot `migrate`.
+  3. Start `web`, workers, and `caddy`.
+
+## Health probes
+
+- System health: `/api/health/system`
+- Worker health aggregate: `/api/health/workers/`
+- Worker-class health:
+  - `/api/health/workers/content`
+  - `/api/health/workers/image`
+  - `/api/health/workers/upload`
+  - `/api/health/workers/finalize`
+
+Worker classes publish Redis heartbeat keys. API health probes read heartbeat freshness to determine worker liveness.
+
+## Metrics
+
+`/api/metrics` exposes:
+
+- Queue depth and consumers for primary/retry/DLQ queues.
+- Generation job counts by status and job type.
+- Average generation time (seconds) from successful jobs.
+
+If `METRICS_TOKEN` is set, endpoint access requires `Authorization: Bearer <token>` (or `?token=`).
+
+## Operations notes
+
+- Use worker drain for maintenance:
+  - stop web publishers first,
+  - wait for queue depth to reach zero,
+  - then stop worker services.
+- DLQ replay should preserve idempotency keys and be followed by job-state verification.
+- Backups are handled by `scripts/backup-postgres.sh` + `scripts/pg-backup.cron`; restore via `scripts/restore-postgres.sh`.

@@ -1,0 +1,2 @@
+# Run nightly at 02:30 UTC.
+30 2 * * * /bin/bash /app/scripts/backup-postgres.sh >> /var/log/aippt-backup.log 2>&1

@@ -3,6 +3,7 @@ import { json } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 import { auth } from '@/lib/auth'
 import { exportPptx } from '@/server/presentations/export-service'
+import { captureWebException } from '@/server/observability/sentry'
 import { assertQuota, quotaErrorMessage, recordUsage } from '@/server/usage/service'
 import { assertRateLimit, rateLimitErrorMessage } from '@/server/usage/rate-limit'
 
@@ -33,25 +34,34 @@ export const Route = createFileRoute('/api/presentations/$id/export')({
             return json({ error: quotaErrorMessage(error) }, { status: 429 })
           }
 
-          const result = await exportPptx(session.user.id, params.id)
-          if (!result) return json({ error: 'Presentation not found' }, { status: 404 })
+          try {
+            const result = await exportPptx(session.user.id, params.id)
+            if (!result) return json({ error: 'Presentation not found' }, { status: 404 })
 
-          await recordUsage({
-            userId: session.user.id,
-            presentationId: params.id,
-            metric: 'EXPORTS',
-            type: 'EXPORT_DOWNLOADED',
-            metadata: { format: 'pptx' },
-          })
+            await recordUsage({
+              userId: session.user.id,
+              presentationId: params.id,
+              metric: 'EXPORTS',
+              type: 'EXPORT_DOWNLOADED',
+              metadata: { format: 'pptx' },
+            })
 
-          return new Response(new Uint8Array(result.buffer), {
-            headers: {
-              'Content-Type':
-                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-              'Content-Disposition': `attachment; filename="${result.filename}"`,
-              'Content-Length': String(result.buffer.byteLength),
-            },
-          })
+            return new Response(new Uint8Array(result.buffer), {
+              headers: {
+                'Content-Type':
+                  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                'Content-Disposition': `attachment; filename="${result.filename}"`,
+                'Content-Length': String(result.buffer.byteLength),
+              },
+            })
+          } catch (error) {
+            captureWebException(error, {
+              endpoint: 'presentation-export',
+              userId: session.user.id,
+              presentationId: params.id,
+            })
+            return json({ error: 'Export failed.' }, { status: 503 })
+          }
         }
 
         return json(

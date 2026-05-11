@@ -1,204 +1,160 @@
-Welcome to your new TanStack Start app! 
+# AI Presentation Platform
 
-# Getting Started
+Production-ready AI deck generator and editor built on TanStack Start, RabbitMQ workers, Postgres, Redis, and ImageKit.
 
-To run this application:
+## Architecture
+
+```mermaid
+flowchart LR
+  user[BrowserUser] --> caddy[CaddyHTTPS]
+  caddy --> web[WebAPI_UI]
+  web --> pg[(Postgres)]
+  web --> rabbit[(RabbitMQ)]
+  web --> redis[(Redis)]
+
+  rabbit --> wc[WorkerContent]
+  rabbit --> wi[WorkerImageUpload]
+  rabbit --> wf[WorkerFinalize]
+
+  wc --> pg
+  wi --> pg
+  wf --> pg
+  wc --> redis
+  wi --> redis
+  wf --> redis
+```
+
+## Quick Start (Development)
+
+1. Copy environment defaults:
+   - `cp .env.development.example .env`
+2. Install dependencies:
+   - `npm install`
+3. Start stack:
+   - `docker compose up --build`
+4. Run one-off Prisma generate/build checks:
+   - `npm run db:generate`
+   - `npm run build`
+
+## Production Deploy (Hostinger VPS)
+
+### 1) Environment
+
+1. Copy production env template:
+   - `cp .env.production.example .env.production`
+2. Fill real secrets (OAuth, Gemini/ImageKit, auth secret, Sentry, backup remote target).
+
+### 2) Build and start infra/app
 
 ```bash
-npm install
-npm run dev
+docker compose -f docker-compose.prod.yml up -d postgres rabbitmq redis
 ```
 
-# Building For Production
-
-To build this application for production:
+### 3) Run migrations once (never on web boot)
 
 ```bash
-npm run build
+docker compose -f docker-compose.prod.yml --profile ops run --rm migrate
 ```
 
-## Testing
-
-This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
+### 4) Start web/workers/proxy
 
 ```bash
-npm run test
+docker compose -f docker-compose.prod.yml up -d web worker-content worker-image worker-finalize caddy
 ```
 
-## Styling
+## Health and Metrics
 
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
+- Web system health: `GET /api/health/system`
+- Worker aggregate health: `GET /api/health/workers/`
+- Per worker class health:
+  - `GET /api/health/workers/content`
+  - `GET /api/health/workers/image`
+  - `GET /api/health/workers/upload`
+  - `GET /api/health/workers/finalize`
+- Metrics endpoint: `GET /api/metrics`
+  - Protected with `METRICS_TOKEN` if configured (`Authorization: Bearer <token>`).
 
-### Removing Tailwind CSS
+## Observability
 
-If you prefer not to use Tailwind CSS:
+- Structured logs: JSON via `pino` for web + workers.
+- Error tracking: Sentry via `SENTRY_DSN`, `SENTRY_ENVIRONMENT`, `SENTRY_RELEASE`.
+- Log rotation: handled at container/runtime level (Docker json-file limits or host logrotate). Configure this on VPS.
 
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Uninstall the packages: `npm install @tailwindcss/vite tailwindcss -D`
+## Backups and Restore
 
-## Linting & Formatting
+### Nightly backup job
 
+- Script: `scripts/backup-postgres.sh`
+- Cron template: `scripts/pg-backup.cron`
+- Supports local retention + optional remote upload via `scp` (`BACKUP_REMOTE_TARGET`).
 
-This project uses [eslint](https://eslint.org/) and [prettier](https://prettier.io/) for linting and formatting. Eslint is configured using [tanstack/eslint-config](https://tanstack.com/config/latest/docs/eslint). The following scripts are available:
+Example host cron:
 
 ```bash
-npm run lint
-npm run format
-npm run check
+chmod +x scripts/backup-postgres.sh scripts/restore-postgres.sh
+crontab scripts/pg-backup.cron
 ```
 
+### Restore
 
-
-## Routing
-
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
+```bash
+POSTGRES_PASSWORD='***' scripts/restore-postgres.sh /path/to/aippt_YYYYMMDDTHHMMSSZ.sql.gz
 ```
 
-Then anywhere in your JSX you can use it like so:
+## Runbook
 
-```tsx
-<Link to="/about">About</Link>
+### Restart workers
+
+```bash
+docker compose -f docker-compose.prod.yml restart worker-content worker-image worker-finalize
 ```
 
-This will create a link that will navigate to the `/about` route.
+### Drain queue safely before maintenance
 
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
+1. Stop web publishers first:
+   - `docker compose -f docker-compose.prod.yml stop web`
+2. Keep workers running until queue depths reach 0 (`/api/metrics`).
+3. Stop workers after drain:
+   - `docker compose -f docker-compose.prod.yml stop worker-content worker-image worker-finalize`
 
-### Using A Layout
+### Replay DLQ
 
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you render `{children}` in the `shellComponent`.
+1. Inspect DLQ depth in `/api/metrics` (`*.dlq` queues).
+2. Move messages from DLQ back to primary queue from RabbitMQ management UI/API.
+3. Start corresponding workers and monitor `generation_jobs_total` and logs.
+4. Ensure idempotency keys are preserved and job rows are not manually duplicated.
 
-Here is an example layout that includes a header:
+## Environment Separation
 
-```tsx
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
+- Development: `.env.development.example`
+- Staging: `.env.staging.example`
+- Production: `.env.production.example`
+- Legacy/base reference: `.env.example`
 
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'My App' },
-    ],
-  }),
-  shellComponent: ({ children }) => (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <header>
-          <nav>
-            <Link to="/">Home</Link>
-            <Link to="/about">About</Link>
-          </nav>
-        </header>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  ),
-})
-```
+## Scripts
 
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
+- `npm run dev`
+- `npm run build`
+- `npm run start`
+- `npm run db:generate`
+- `npm run db:migrate`
+- `npm run db:migrate:deploy`
+- `npm run test`
+- `npm run lint`
 
-## Server Functions
+## Deliverables Checklist (Pass/Gap Matrix)
 
-TanStack Start provides server functions that allow you to write server-side code that seamlessly integrates with your client components.
+Infra-only phase status:
 
-```tsx
-import { createServerFn } from '@tanstack/react-start'
-
-const getServerTime = createServerFn({
-  method: 'GET',
-}).handler(async () => {
-  return new Date().toISOString()
-})
-
-// Use in a component
-function MyComponent() {
-  const [time, setTime] = useState('')
-  
-  useEffect(() => {
-    getServerTime().then(setTime)
-  }, [])
-  
-  return <div>Server time: {time}</div>
-}
-```
-
-## API Routes
-
-You can create API routes by using the `server` property in your route definitions:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-import { json } from '@tanstack/react-start'
-
-export const Route = createFileRoute('/api/hello')({
-  server: {
-    handlers: {
-      GET: () => json({ message: 'Hello, World!' }),
-    },
-  },
-})
-```
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/people')({
-  loader: async () => {
-    const response = await fetch('https://swapi.dev/api/people')
-    return response.json()
-  },
-  component: PeopleComponent,
-})
-
-function PeopleComponent() {
-  const data = Route.useLoaderData()
-  return (
-    <ul>
-      {data.results.map((person) => (
-        <li key={person.name}>{person.name}</li>
-      ))}
-    </ul>
-  )
-}
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-# Demo files
-
-Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
-
-For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
+- Google OAuth works alongside GitHub with account linking — **Pass (existing, not changed in Phase 9)**
+- Home page with prompt/options/history — **Pass (existing)**
+- Editable persisted outline review — **Pass (existing)**
+- RabbitMQ parallel per-slide workers — **Pass (existing)**
+- `/presentation/:id` live progress navigation-safe — **Pass (existing)**
+- 4 templates hot-swappable — **Pass (existing)**
+- Full editor controls — **Pass (existing baseline)**
+- Slideshow + export to PPTX/PDF/PNG + share link — **Gap (PDF/PNG export still outside this infra-only phase)**
+- ImageKit integration for images — **Pass (existing)**
+- Dockerized Hostinger-ready deployment + HTTPS on `codexaa.io` — **Pass (implemented in this phase)**
+- Sentry + structured logs + health checks + graceful shutdown + DLQ ops — **Pass (implemented/documented in this phase)**
+- Clean modern accessible dark-mode UI — **Pass (existing baseline)**

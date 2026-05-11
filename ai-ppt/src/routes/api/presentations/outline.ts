@@ -5,6 +5,7 @@ import { getRequestHeaders } from '@tanstack/react-start/server'
 
 import { auth } from '@/lib/auth'
 import { logger } from '@/server/logging/logger'
+import { captureWebException } from '@/server/observability/sentry'
 import { createDraftFromInput } from '@/server/presentations/outline-service'
 import { normalizePresentationInput } from '@/server/presentations/schemas'
 import {
@@ -53,6 +54,10 @@ export const Route = createFileRoute('/api/presentations/outline')({
           })
           return json(draft)
         } catch (error) {
+          captureWebException(error, {
+            endpoint: 'presentations-outline',
+            userId: session.user.id,
+          })
           logger.error(
             {
               userId: session.user.id,

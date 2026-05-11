@@ -1,6 +1,7 @@
 import amqplib from 'amqplib'
 
 import { ensureQueueTopology } from '@/server/queue/topology'
+import { queueDlqName, queueRetryName } from '@/server/queue/queues'
 
 let connectionPromise: Promise<amqplib.ChannelModel> | null = null
 let channelPromise: Promise<amqplib.Channel> | null = null
@@ -27,6 +28,26 @@ export async function getRabbitChannel() {
   }
 
   return await channelPromise
+}
+
+export async function getQueueDepthSnapshot(queueNames: string[]) {
+  const channel = await getRabbitChannel()
+
+  const rows = await Promise.all(
+    queueNames.flatMap((queueName) => {
+      const allNames = [queueName, queueRetryName(queueName), queueDlqName(queueName)]
+      return allNames.map(async (name) => {
+        const info = await channel.checkQueue(name)
+        return {
+          queue: name,
+          ready: info.messageCount,
+          consumers: info.consumerCount,
+        }
+      })
+    }),
+  )
+
+  return rows
 }
 export async function closeRabbit() {
   if (channelPromise) {

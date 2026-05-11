@@ -8,9 +8,12 @@ import {
 import { ensureQueueTopology } from '../../../src/server/queue/topology'
 import { logger } from './logger'
 import { prisma } from './prisma'
+import { captureWorkerException } from './sentry'
 
 let connectionPromise: Promise<amqplib.ChannelModel> | null = null
 let channelPromise: Promise<amqplib.Channel> | null = null
+let activeJobCount = 0
+let isDraining = false
 
 function getRabbitUrl() {
   return process.env.RABBITMQ_URL ?? 'amqp://localhost:5672'
@@ -70,6 +73,11 @@ export async function consumeJsonQueue<
   await channel.consume(queueName, async (message) => {
     if (!message) return
 
+    if (isDraining) {
+      channel.nack(message, false, true)
+      return
+    }
+
     let payload: TPayload
     try {
       payload = JSON.parse(message.content.toString()) as TPayload
@@ -78,6 +86,7 @@ export async function consumeJsonQueue<
       return
     }
 
+    activeJobCount += 1
     try {
       await handler(payload)
       channel.ack(message)
@@ -105,6 +114,12 @@ export async function consumeJsonQueue<
           { queueName, payload, err: errorMessage },
           'Job moved to dead letter',
         )
+        captureWorkerException(error, {
+          queueName,
+          attempt: nextAttempt,
+          payload,
+          final: true,
+        })
         channel.reject(message, false)
         return
       }
@@ -132,8 +147,24 @@ export async function consumeJsonQueue<
         },
       )
       channel.ack(message)
+      captureWorkerException(error, {
+        queueName,
+        attempt: nextAttempt,
+        payload,
+        final: false,
+      })
+    } finally {
+      activeJobCount = Math.max(0, activeJobCount - 1)
     }
   })
+}
+
+export async function beginWorkerDrain(timeoutMs = 30_000) {
+  isDraining = true
+  const startedAt = Date.now()
+  while (activeJobCount > 0 && Date.now() - startedAt < timeoutMs) {
+    await new Promise((resolve) => setTimeout(resolve, 250))
+  }
 }
 
 export async function closeWorkerRabbit() {

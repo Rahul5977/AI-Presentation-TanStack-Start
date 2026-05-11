@@ -7,6 +7,7 @@ import { getRequestHeaders } from '@tanstack/react-start/server'
 
 import { auth } from '@/lib/auth'
 import { logger } from '@/server/logging/logger'
+import { captureWebException } from '@/server/observability/sentry'
 import { prisma } from '@/lib/db'
 import {
   publishPresentationFinalizeJob,
@@ -263,6 +264,11 @@ export const Route = createFileRoute('/api/drafts/$draftId/generate')({
             }),
           )
         } catch (error) {
+          captureWebException(error, {
+            endpoint: 'draft-generate',
+            userId: session.user.id,
+            draftId: params.draftId,
+          })
           logger.error(
             {
               presentationId,
