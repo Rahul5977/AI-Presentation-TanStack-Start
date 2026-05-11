@@ -1,6 +1,6 @@
 import { QUEUE_NAMES } from '../../../src/server/queue/queues'
 import { consumeJsonQueue } from '../lib/rabbit'
-import { generateSlideContent } from '../lib/openai'
+import { generateSlideContent } from '../lib/gemini'
 import { prisma } from '../lib/prisma'
 import { publishProgressEvent } from '../lib/redis'
 

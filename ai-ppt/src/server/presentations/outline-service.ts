@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db'
-import { generateOutlineWithOpenAI } from '@/server/ai/openai'
+import { generateOutlineWithGemini } from '@/server/ai/gemini'
 import type { PresentationInput } from '@/server/presentations/schemas'
 
 type DraftSlideRecord = {
@@ -30,7 +30,7 @@ export async function createDraftFromInput(
   userId: string,
   input: PresentationInput,
 ): Promise<DraftWithSlides> {
-  const outline = await generateOutlineWithOpenAI(input)
+  const outline = await generateOutlineWithGemini(input)
 
   const created = await prisma.presentation.create({
     data: {
@@ -189,7 +189,7 @@ export async function regenerateDraftOutline(
     throw new Error('Draft not found.')
   }
 
-  const outline = await generateOutlineWithOpenAI({
+  const outline = await generateOutlineWithGemini({
     prompt: draft.prompt,
     audience: draft.audience,
     audienceCustom: draft.audienceCustom ?? undefined,

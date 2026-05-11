@@ -1,7 +1,7 @@
 import { publishSlideImageUploadJob } from '../../../src/server/queue/publish'
 import { QUEUE_NAMES } from '../../../src/server/queue/queues'
 import { consumeJsonQueue } from '../lib/rabbit'
-import { generateSlideImageBase64 } from '../lib/openai'
+import { generateSlideImageBase64 } from '../lib/gemini'
 import { prisma } from '../lib/prisma'
 import { publishProgressEvent } from '../lib/redis'
 

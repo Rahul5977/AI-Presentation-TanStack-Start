@@ -28,10 +28,6 @@ type PendingPublishJob =
       payload: Parameters<typeof publishPresentationFinalizeJob>[0]
     }
 
-function idempotencyKey(parts: Array<string>) {
-  return parts.join(':')
-}
-
 export const Route = createFileRoute('/api/drafts/$draftId/generate')({
   server: {
     handlers: {
@@ -45,9 +41,7 @@ export const Route = createFileRoute('/api/drafts/$draftId/generate')({
         const draft = await prisma.draft.findFirst({
           where: {
             id: params.draftId,
-            presentation: {
-              userId: session.user.id,
-            },
+            presentation: { userId: session.user.id },
           },
           include: {
             presentation: {
@@ -61,15 +55,11 @@ export const Route = createFileRoute('/api/drafts/$draftId/generate')({
                 language: true,
               },
             },
-            slides: {
-              orderBy: [{ position: 'asc' }],
-            },
+            slides: { orderBy: [{ position: 'asc' }] },
           },
         })
 
-        if (!draft) {
-          return json({ error: 'Draft not found' }, { status: 404 })
-        }
+        if (!draft) return json({ error: 'Draft not found' }, { status: 404 })
 
         if (draft.slides.length === 0) {
           return json({ error: 'Draft has no slides to generate.' }, { status: 400 })
@@ -88,28 +78,43 @@ export const Route = createFileRoute('/api/drafts/$draftId/generate')({
           )
         }
 
-        const jobsToPublish: PendingPublishJob[] = []
         const presentationId = draft.presentation.id
+        const withImages = draft.presentation.imageStyle !== 'NONE'
 
-        await prisma.$transaction(async (tx) => {
-          await tx.generationJob.deleteMany({
-            where: { presentationId },
-          })
-          await tx.slide.deleteMany({
-            where: { presentationId },
-          })
+        // ── Pre-generate all IDs and keys BEFORE the transaction ────────
+        // This lets us build bulk createMany payloads with no per-row
+        // round-trips, cutting DB calls from 3N+4 → 6 regardless of N.
+        const slideRows = draft.slides.map((draftSlide) => {
+          const slideId = randomUUID()
+          return {
+            draftSlide,
+            slideId,
+            contentJobId: randomUUID(),
+            imageJobId: randomUUID(),
+            contentKey: `${presentationId}:${slideId}:content:v1`,
+            imageKey: `${presentationId}:${slideId}:image:v1`,
+          }
+        })
+        const finalizeJobId = randomUUID()
+        const finalizeKey = `${presentationId}:finalize:${randomUUID()}`
 
-          await tx.presentation.update({
-            where: { id: presentationId },
-            data: {
-              status: 'QUEUED',
-              lastEditedAt: new Date(),
-            },
-          })
+        // ── Single transaction — 6 bulk DB calls total ───────────────────
+        await prisma.$transaction(
+          async (tx) => {
+            // 1. Clear previous attempt artefacts
+            await tx.generationJob.deleteMany({ where: { presentationId } })
+            await tx.slide.deleteMany({ where: { presentationId } })
 
-          for (const draftSlide of draft.slides) {
-            const slide = await tx.slide.create({
-              data: {
+            // 2. Mark presentation as queued
+            await tx.presentation.update({
+              where: { id: presentationId },
+              data: { status: 'QUEUED', lastEditedAt: new Date() },
+            })
+
+            // 3. Bulk-create all slides (1 round-trip)
+            await tx.slide.createMany({
+              data: slideRows.map(({ slideId, draftSlide }) => ({
+                id: slideId,
                 presentationId,
                 sourceDraftSlideId: draftSlide.id,
                 status: 'PENDING',
@@ -119,127 +124,116 @@ export const Route = createFileRoute('/api/drafts/$draftId/generate')({
                 bullets: draftSlide.bullets,
                 visualConcept: draftSlide.visualConcept,
                 speakerNotes: draftSlide.speakerNotesHint,
-              },
+              })),
             })
 
-            const contentIdempotencyKey = idempotencyKey([
-              presentationId,
-              slide.id,
-              'content',
-              'v1',
-            ])
-
-            const contentJob = await tx.generationJob.create({
-              data: {
+            // 4. Bulk-create content jobs (1 round-trip)
+            await tx.generationJob.createMany({
+              data: slideRows.map(({ slideId, contentJobId, contentKey }) => ({
+                id: contentJobId,
                 presentationId,
-                slideId: slide.id,
-                type: 'SLIDE_CONTENT_GENERATE',
-                status: 'PENDING',
-                idempotencyKey: contentIdempotencyKey,
+                slideId,
+                type: 'SLIDE_CONTENT_GENERATE' as const,
+                status: 'PENDING' as const,
+                idempotencyKey: contentKey,
                 payload: {
                   presentationId,
-                  slideId: slide.id,
+                  slideId,
                   prompt: draft.presentation.prompt,
                   tone: draft.presentation.tone,
                   depth: draft.presentation.depth,
                   language: draft.presentation.language,
                 },
-              },
-              select: { id: true },
+              })),
             })
 
-            jobsToPublish.push({
-              type: 'content',
-              payload: {
-                presentationId,
-                slideId: slide.id,
-                jobId: contentJob.id,
-                idempotencyKey: contentIdempotencyKey,
-                attempt: 0,
-                prompt: draft.presentation.prompt,
-                tone: draft.presentation.tone,
-                depth: draft.presentation.depth,
-                language: draft.presentation.language,
-              },
-            })
-
-            if (draft.presentation.imageStyle !== 'NONE') {
-              const imageIdempotencyKey = idempotencyKey([
-                presentationId,
-                slide.id,
-                'image',
-                'v1',
-              ])
-
-              const imageJob = await tx.generationJob.create({
-                data: {
+            // 5. Bulk-create image jobs (1 round-trip, only if images enabled)
+            if (withImages) {
+              await tx.generationJob.createMany({
+                data: slideRows.map(({ slideId, imageJobId, imageKey, draftSlide }) => ({
+                  id: imageJobId,
                   presentationId,
-                  slideId: slide.id,
-                  type: 'SLIDE_IMAGE_GENERATE',
-                  status: 'PENDING',
-                  idempotencyKey: imageIdempotencyKey,
+                  slideId,
+                  type: 'SLIDE_IMAGE_GENERATE' as const,
+                  status: 'PENDING' as const,
+                  idempotencyKey: imageKey,
                   payload: {
                     presentationId,
-                    slideId: slide.id,
+                    slideId,
                     visualConcept: draftSlide.visualConcept,
                     imageStyle: draft.presentation.imageStyle,
                   },
-                },
-                select: { id: true },
-              })
-
-              jobsToPublish.push({
-                type: 'image',
-                payload: {
-                  presentationId,
-                  slideId: slide.id,
-                  jobId: imageJob.id,
-                  idempotencyKey: imageIdempotencyKey,
-                  attempt: 0,
-                  visualConcept: draftSlide.visualConcept,
-                  imageStyle: draft.presentation.imageStyle,
-                },
+                })),
               })
             }
-          }
 
-          const finalizeIdempotencyKey = idempotencyKey([
-            presentationId,
-            'finalize',
-            randomUUID(),
-          ])
+            // 6. Create finalize job (1 round-trip)
+            await tx.generationJob.create({
+              data: {
+                id: finalizeJobId,
+                presentationId,
+                type: 'PRESENTATION_FINALIZE',
+                status: 'PENDING',
+                idempotencyKey: finalizeKey,
+                payload: { presentationId },
+              },
+            })
+          },
+          // Safety-net: allow up to 30 s even if N is very large
+          { timeout: 30_000 },
+        )
 
-          const finalizeJob = await tx.generationJob.create({
-            data: {
-              presentationId,
-              type: 'PRESENTATION_FINALIZE',
-              status: 'PENDING',
-              idempotencyKey: finalizeIdempotencyKey,
-              payload: { presentationId },
-            },
-            select: { id: true },
-          })
+        // ── Build publish list from pre-generated IDs ────────────────────
+        const jobsToPublish: PendingPublishJob[] = []
 
+        for (const { slideId, contentJobId, contentKey, imageJobId, imageKey, draftSlide } of slideRows) {
           jobsToPublish.push({
-            type: 'finalize',
+            type: 'content',
             payload: {
               presentationId,
-              jobId: finalizeJob.id,
-              idempotencyKey: finalizeIdempotencyKey,
+              slideId,
+              jobId: contentJobId,
+              idempotencyKey: contentKey,
               attempt: 0,
+              prompt: draft.presentation.prompt,
+              tone: draft.presentation.tone,
+              depth: draft.presentation.depth,
+              language: draft.presentation.language,
             },
           })
+
+          if (withImages) {
+            jobsToPublish.push({
+              type: 'image',
+              payload: {
+                presentationId,
+                slideId,
+                jobId: imageJobId,
+                idempotencyKey: imageKey,
+                attempt: 0,
+                visualConcept: draftSlide.visualConcept,
+                imageStyle: draft.presentation.imageStyle,
+              },
+            })
+          }
+        }
+
+        jobsToPublish.push({
+          type: 'finalize',
+          payload: {
+            presentationId,
+            jobId: finalizeJobId,
+            idempotencyKey: finalizeKey,
+            attempt: 0,
+          },
         })
 
+        // ── Publish to RabbitMQ ──────────────────────────────────────────
         try {
           await Promise.all(
             jobsToPublish.map((job) => {
-              if (job.type === 'content') {
-                return publishSlideContentJob(job.payload)
-              }
-              if (job.type === 'image') {
-                return publishSlideImageJob(job.payload)
-              }
+              if (job.type === 'content') return publishSlideContentJob(job.payload)
+              if (job.type === 'image') return publishSlideImageJob(job.payload)
               return publishPresentationFinalizeJob(job.payload)
             }),
           )
@@ -257,9 +251,7 @@ export const Route = createFileRoute('/api/drafts/$draftId/generate')({
             data: { status: 'FAILED' },
           })
           const message =
-            error instanceof Error
-              ? error.message
-              : 'Failed to publish generation jobs.'
+            error instanceof Error ? error.message : 'Failed to publish generation jobs.'
           return json({ error: message }, { status: 503 })
         }
 
