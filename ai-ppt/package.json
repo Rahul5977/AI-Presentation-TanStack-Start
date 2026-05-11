@@ -31,6 +31,8 @@
     "@fontsource-variable/merriweather": "^5.2.6",
     "@google/genai": "^2.0.1",
     "@imagekit/nodejs": "^7.5.0",
+    "@noble/ciphers": "^2.2.0",
+    "@noble/hashes": "^2.2.0",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@sentry/node": "^10.52.0",
