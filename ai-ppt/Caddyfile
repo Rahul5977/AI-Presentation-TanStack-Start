@@ -1,4 +1,4 @@
-codexaa.io, www.codexaa.io {
+kodexa.in, www.kodexa.in {
   encode zstd gzip
 
   header {
