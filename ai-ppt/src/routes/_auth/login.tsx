@@ -1,8 +1,10 @@
 import LoginForm from '#/components/auth/login-form'
+import { authClient } from '#/lib/auth-client'
 import { getSession } from '#/lib/auth-function'
 import { AUTH_HOME_PATH } from '#/lib/auth-path'
-import { createFileRoute, Link, redirect } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect, useNavigate } from '@tanstack/react-router'
 import { Presentation } from 'lucide-react'
+import { useEffect } from 'react'
 import { z } from 'zod'
 
 export const Route = createFileRoute('/_auth/login')({
@@ -21,6 +23,13 @@ export const Route = createFileRoute('/_auth/login')({
 
 function LoginPage() {
   const { redirect: redirectTo } = Route.useSearch()
+  const navigate = useNavigate()
+  const { data: session } = authClient.useSession()
+
+  useEffect(() => {
+    if (!session) return
+    void navigate({ to: AUTH_HOME_PATH })
+  }, [navigate, session])
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">

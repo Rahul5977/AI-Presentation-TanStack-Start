@@ -46,8 +46,9 @@ function safeJoin(root, pathname) {
 async function maybeServeStatic(request) {
   const { pathname } = new URL(request.url);
   const candidates = [];
+  const isAssetRequest = pathname.startsWith("/assets/");
 
-  if (pathname.startsWith("/assets/")) {
+  if (isAssetRequest) {
     const target = safeJoin(clientRoot, pathname);
     if (target) candidates.push(target);
   }
@@ -85,6 +86,16 @@ async function maybeServeStatic(request) {
     }
   }
 
+  if (isAssetRequest) {
+    return new Response("Not Found", {
+      status: 404,
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-store",
+      },
+    });
+  }
+
   return null;
 }
 
@@ -103,7 +114,21 @@ serve(
     fetch: async (request, env, executionCtx) => {
       const staticResponse = await maybeServeStatic(request);
       if (staticResponse) return staticResponse;
-      return app.fetch(request, env, executionCtx);
+
+      const response = await app.fetch(request, env, executionCtx);
+      const contentType = response.headers.get("Content-Type") ?? "";
+
+      if (!contentType.startsWith("text/html")) {
+        return response;
+      }
+
+      const headers = new Headers(response.headers);
+      headers.set("Cache-Control", "no-store");
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers,
+      });
     },
     hostname: host,
     port,

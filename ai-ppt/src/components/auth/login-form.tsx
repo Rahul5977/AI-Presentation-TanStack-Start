@@ -1,7 +1,6 @@
 import { Button } from '#/components/ui/button'
 import { Separator } from '#/components/ui/separator'
 import { authClient } from '#/lib/auth-client'
-import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
@@ -9,10 +8,30 @@ import { AUTH_HOME_PATH } from '@/lib/auth-path'
 import { toInternalPath } from '@/lib/auth-redirect'
 
 export default function LoginForm({ redirectTo }: { redirectTo?: string }) {
-  const navigate = useNavigate()
   const [isSubmitting, setIsSubmitting] = useState<'github' | 'google' | null>(
     null,
   )
+
+  const waitForSession = async () => {
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      try {
+        const response = await fetch('/api/auth/get-session', {
+          credentials: 'include',
+        })
+
+        if (response.ok) {
+          const payload = await response.json()
+          if (payload?.session) return true
+        }
+      } catch {
+        // Retry while the popup callback finishes writing cookies.
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 250))
+    }
+
+    return false
+  }
 
   const handleSocialLogin = async (provider: 'github' | 'google') => {
     try {
@@ -20,10 +39,12 @@ export default function LoginForm({ redirectTo }: { redirectTo?: string }) {
       await authClient.signIn.social({
         provider,
         fetchOptions: {
-          onSuccess: () => {
+          onSuccess: async () => {
             toast.success('Logged in successfully!')
             const internalRedirect = toInternalPath(redirectTo)
-            navigate({ to: (internalRedirect ?? AUTH_HOME_PATH) as any })
+
+            await waitForSession()
+            window.location.assign(internalRedirect ?? AUTH_HOME_PATH)
           },
           onError: ({ error }) => {
             toast.error(error.message || 'Failed to login. Please try again.')
