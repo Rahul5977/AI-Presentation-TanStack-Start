@@ -40,10 +40,15 @@ export default function LoginForm({ redirectTo }: { redirectTo?: string }) {
         provider,
         fetchOptions: {
           onSuccess: async () => {
-            toast.success('Logged in successfully!')
             const internalRedirect = toInternalPath(redirectTo)
+            const sessionReady = await waitForSession()
+            if (!sessionReady) {
+              toast.error('Login completed, but no session cookie was created.')
+              setIsSubmitting(null)
+              return
+            }
 
-            await waitForSession()
+            toast.success('Logged in successfully!')
             window.location.assign(internalRedirect ?? AUTH_HOME_PATH)
           },
           onError: ({ error }) => {
