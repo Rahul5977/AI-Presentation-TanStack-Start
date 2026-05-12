@@ -1,4 +1,8 @@
-kodexa.in, www.kodexa.in {
+www.kodexa.in {
+  redir https://kodexa.in{uri} permanent
+}
+
+kodexa.in {
   encode zstd gzip
 
   header {
