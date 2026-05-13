@@ -20,7 +20,7 @@ function resolveOutlineProvider(): OutlineProvider {
     process.env.OUTLINE_PROVIDER ??
     process.env.TEXT_PROVIDER ??
     process.env.AI_PROVIDER ??
-    'gemini'
+    'openai'
   return raw.toLowerCase() === 'openai' ? 'openai' : 'gemini'
 }
 

@@ -42,7 +42,9 @@ function getPool(): Pool {
     globalThis.__prismaPool = new Pool({
       connectionString: requireDatabaseUrl(),
       max: 10,
-      connectionTimeoutMillis: 10_000,
+      // Production auth/session queries can hit transient cold-start/network delays.
+      // Use a slightly higher timeout to reduce ETIMEDOUT during OAuth/session checks.
+      connectionTimeoutMillis: 30_000,
     });
   }
   return globalThis.__prismaPool;
