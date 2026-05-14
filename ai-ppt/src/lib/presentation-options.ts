@@ -47,7 +47,6 @@ export const imageStyleOptions = [
   { value: 'ILLUSTRATION', label: 'Illustration' },
   { value: 'MINIMAL', label: 'Minimal' },
   { value: 'THREE_D', label: '3D' },
-  { value: 'NONE', label: 'None' },
 ] as const
 
 export const depthOptions = [

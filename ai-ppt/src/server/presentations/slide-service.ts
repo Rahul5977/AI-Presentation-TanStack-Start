@@ -67,6 +67,7 @@ export async function updateSlideContent(
     bullets?: string[]
     speakerNotes?: string
     visualConcept?: string
+    layoutHints?: unknown
   },
 ): Promise<SlideData | null> {
   const existing = await prisma.slide.findFirst({
@@ -354,7 +355,10 @@ export async function triggerSlideImageRegen(
     idempotencyKey: key,
     attempt: 0,
     visualConcept: slide.visualConcept,
-    imageStyle: overrides.imageStyle ?? presentation.imageStyle,
+    imageStyle:
+      (overrides.imageStyle ?? presentation.imageStyle) === 'NONE'
+        ? 'ILLUSTRATION'
+        : (overrides.imageStyle ?? presentation.imageStyle),
   })
 
   logger.info({ presentationId, slideId, jobId: job.id }, 'Slide image regen queued')

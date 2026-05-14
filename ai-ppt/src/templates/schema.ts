@@ -12,6 +12,8 @@ export type SlideVariantKey =
   | 'content'
   | 'twoColumn'
   | 'imageLeft'
+  | 'imageRight'
+  | 'imageTop'
   | 'quote'
   | 'stats'
   | 'sectionDivider'

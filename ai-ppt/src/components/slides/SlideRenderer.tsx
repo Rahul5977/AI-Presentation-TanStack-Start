@@ -28,6 +28,10 @@ export default function SlideRenderer({ slide, template }: SlideRendererProps) {
   const bullets = normalizeBullets(slide.bullets)
   const variantKey = resolveSlideVariant(slide.layoutHints, bullets.length)
   const variant = template.layouts[variantKey]
+  const topImageLayout = variant.key === 'imageTop' || variant.key === 'title' || variant.key === 'sectionDivider' || variant.key === 'closing'
+  const mediaFrameClass = topImageLayout
+    ? 'h-full min-h-36 max-h-72 rounded-2xl'
+    : 'h-full min-h-44 rounded-xl'
 
   return (
     <SlideCanvas template={template}>
@@ -94,15 +98,23 @@ export default function SlideRenderer({ slide, template }: SlideRendererProps) {
           )}
         </section>
 
-        <aside className={cn('min-h-0', variant.mediaClasses)} style={{ gridArea: 'media' }}>
+        <aside className={cn('min-h-0 overflow-hidden', variant.mediaClasses)} style={{ gridArea: 'media' }}>
           {slide.imageUrl ? (
             <img
               src={slide.imageUrl}
               alt={slide.visualConcept ?? 'Slide visual'}
-              className="h-full max-h-full w-full rounded-xl border border-[var(--slide-border)] object-cover"
+              className={cn(
+                'w-full border border-[var(--slide-border)] object-cover',
+                mediaFrameClass,
+              )}
             />
           ) : (
-            <div className="flex h-full min-h-28 items-center justify-center rounded-xl border border-dashed border-[var(--slide-border)] px-3 text-center">
+            <div
+              className={cn(
+                'flex h-full items-center justify-center border border-dashed border-[var(--slide-border)] px-3 text-center',
+                mediaFrameClass,
+              )}
+            >
               <p
                 style={{
                   fontFamily: 'var(--slide-font-body)',

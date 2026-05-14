@@ -93,10 +93,7 @@ export async function startContentConsumer() {
       })
 
       const hasImageAlready = Boolean(slide.imageUrl || slide.imageAssetId)
-      const nextStatus =
-        slide.presentation.imageStyle === 'NONE' || hasImageAlready
-          ? 'READY'
-          : 'CONTENT_READY'
+      const nextStatus = hasImageAlready ? 'READY' : 'CONTENT_READY'
 
       await prisma.$transaction([
         prisma.slide.update({

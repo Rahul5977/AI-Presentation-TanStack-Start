@@ -239,6 +239,7 @@ function PresentationProgressPage() {
         bullets: updated.bullets,
         speakerNotes: updated.speakerNotes ?? undefined,
         visualConcept: updated.visualConcept,
+        layoutHints: updated.layoutHints,
       })
     },
     [scheduleSave],

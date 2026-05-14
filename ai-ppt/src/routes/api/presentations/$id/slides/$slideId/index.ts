@@ -19,6 +19,7 @@ export const Route = createFileRoute('/api/presentations/$id/slides/$slideId/')(
           bullets?: string[]
           speakerNotes?: string
           visualConcept?: string
+          layoutHints?: unknown
         }
 
         const updated = await updateSlideContent(

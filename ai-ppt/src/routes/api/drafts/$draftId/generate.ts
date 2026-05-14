@@ -105,7 +105,10 @@ export const Route = createFileRoute('/api/drafts/$draftId/generate')({
         }
 
         const presentationId = draft.presentation.id
-        const withImages = draft.presentation.imageStyle !== 'NONE'
+        const withImages = true
+        const imageStyle = draft.presentation.imageStyle === 'NONE'
+          ? 'ILLUSTRATION'
+          : draft.presentation.imageStyle
 
         // ── Pre-generate all IDs and keys BEFORE the transaction ────────
         // This lets us build bulk createMany payloads with no per-row
@@ -187,7 +190,7 @@ export const Route = createFileRoute('/api/drafts/$draftId/generate')({
                     presentationId,
                     slideId,
                     visualConcept: draftSlide.visualConcept,
-                    imageStyle: draft.presentation.imageStyle,
+                    imageStyle,
                   },
                 })),
               })
@@ -238,7 +241,7 @@ export const Route = createFileRoute('/api/drafts/$draftId/generate')({
                 idempotencyKey: imageKey,
                 attempt: 0,
                 visualConcept: draftSlide.visualConcept,
-                imageStyle: draft.presentation.imageStyle,
+                imageStyle,
               },
             })
           }

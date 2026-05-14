@@ -69,6 +69,14 @@ const statusColor: Record<EditableSlide['status'], string> = {
   FAILED: 'bg-red-500/15 text-red-600',
 }
 
+const imagePlacementOptions = [
+  { value: 'auto', label: 'Auto' },
+  { value: 'imageLeft', label: 'Image left' },
+  { value: 'imageRight', label: 'Image right' },
+  { value: 'imageTop', label: 'Image top' },
+  { value: 'twoColumn', label: 'Split text + image' },
+] as const
+
 export default function SlideEditorCard({
   slide,
   template,
@@ -154,6 +162,32 @@ export default function SlideEditorCard({
       },
     })
   }
+
+  const currentLayoutType =
+    slide.layoutHints && typeof slide.layoutHints === 'object'
+      ? String((slide.layoutHints as { layoutType?: unknown }).layoutType ?? 'auto')
+      : 'auto'
+
+  const handleLayoutPlacementChange = useCallback(
+    (nextLayoutType: (typeof imagePlacementOptions)[number]['value']) => {
+      const existing =
+        slide.layoutHints && typeof slide.layoutHints === 'object'
+          ? (slide.layoutHints as Record<string, unknown>)
+          : {}
+
+      if (nextLayoutType === 'auto') {
+        const { layoutType: _layoutType, ...rest } = existing
+        handleFieldChange('layoutHints', rest)
+        return
+      }
+
+      handleFieldChange('layoutHints', {
+        ...existing,
+        layoutType: nextLayoutType,
+      })
+    },
+    [handleFieldChange, slide.layoutHints],
+  )
 
   const isGenerating = slide.status === 'PENDING' || slide.status === 'CONTENT_READY' || slide.status === 'IMAGE_READY'
 
@@ -349,6 +383,27 @@ export default function SlideEditorCard({
               placeholder="Describe the image for this slide"
               className="text-sm text-muted-foreground"
             />
+          </div>
+
+          <div>
+            <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Image placement
+            </p>
+            <select
+              value={currentLayoutType}
+              onChange={(e) =>
+                handleLayoutPlacementChange(
+                  e.target.value as (typeof imagePlacementOptions)[number]['value'],
+                )
+              }
+              className="h-10 w-full rounded-xl border border-border/70 bg-background/80 px-3 text-sm outline-none transition focus:border-primary/60 focus:ring-4 focus:ring-primary/15"
+            >
+              {imagePlacementOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       )}
