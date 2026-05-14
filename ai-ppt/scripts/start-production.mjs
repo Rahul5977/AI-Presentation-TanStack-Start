@@ -1,5 +1,5 @@
 import { serve } from "@hono/node-server";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 import app from "../dist/server/server.js";
@@ -43,6 +43,25 @@ function safeJoin(root, pathname) {
   return target;
 }
 
+/** Resolved once: path to the built Tailwind/Vite `styles-*.css`, or null. */
+let mainStylesheetCache = { done: false, path: null };
+
+async function getMainStylesheetPath() {
+  if (mainStylesheetCache.done) return mainStylesheetCache.path;
+  mainStylesheetCache.done = true;
+  try {
+    const assetsDir = path.join(clientRoot, "assets");
+    const files = await readdir(assetsDir);
+    const matches = files.filter((f) => /^styles-.+\.css$/i.test(f));
+    if (matches.length === 0) return null;
+    matches.sort();
+    mainStylesheetCache.path = path.join(assetsDir, matches[matches.length - 1]);
+    return mainStylesheetCache.path;
+  } catch {
+    return null;
+  }
+}
+
 async function maybeServeStatic(request) {
   const { pathname } = new URL(request.url);
   const candidates = [];
@@ -83,6 +102,32 @@ async function maybeServeStatic(request) {
       return new Response(body, { status: 200, headers });
     } catch {
       // Continue trying next candidate/path.
+    }
+  }
+
+  // Stale HTML often still references an old hashed `styles-*.css` after deploy. Serve the
+  // current build's main stylesheet so the page is not broken until the browser refetches HTML.
+  if (isAssetRequest && /^\/assets\/styles-.+\.css$/i.test(pathname)) {
+    const fallback = await getMainStylesheetPath();
+    if (fallback) {
+      const requested = safeJoin(clientRoot, pathname);
+      if (!requested || path.normalize(fallback) !== path.normalize(requested)) {
+        try {
+          const body = await readFile(fallback);
+          console.warn(
+            `[web] Missing ${pathname}; serving current ${path.basename(fallback)} (redeploy / hard-refresh HTML to clear stale links)`,
+          );
+          return new Response(body, {
+            status: 200,
+            headers: {
+              "Content-Type": "text/css; charset=utf-8",
+              "Cache-Control": "no-cache",
+            },
+          });
+        } catch {
+          // fall through to 404
+        }
+      }
     }
   }
 
