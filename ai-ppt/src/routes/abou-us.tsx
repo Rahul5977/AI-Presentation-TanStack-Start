@@ -1,12 +1,12 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
-export const Route = createFileRoute('/about')({
+export const Route = createFileRoute('/abou-us')({
   beforeLoad: async () => {
     throw redirect({ to: '/about-us' })
   },
-  component: AboutRedirect,
+  component: AboutAliasRedirect,
 })
 
-function AboutRedirect() {
+function AboutAliasRedirect() {
   return null
 }

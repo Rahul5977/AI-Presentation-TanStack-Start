@@ -142,6 +142,7 @@ model User {
   presentationMembers PresentationMember[]
   usageEvents   UsageEvent[]
   usageCounters UserUsageCounter[]
+  deckPayments  DeckPayment[]
 
   @@unique([email])
   @@map("user")
@@ -181,6 +182,24 @@ model Account {
 
   @@index([userId])
   @@map("account")
+}
+
+model DeckPayment {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  razorpayOrderId String
+  razorpayPaymentId String?
+  razorpaySignature String?
+  amountInr       Int
+  status          String   @default("PENDING")
+  credits         Int      @default(1)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+  @@index([razorpayOrderId])
+  @@map("deck_payment")
 }
 
 model Verification {

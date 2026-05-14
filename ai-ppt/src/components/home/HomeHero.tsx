@@ -22,6 +22,9 @@ export default function HomeHero({ firstName }: HomeHeroProps) {
           Start with a clear prompt, tune the audience and visual direction,
           then generate a presentation draft that feels ready for review.
         </p>
+        <p className="mt-3 text-sm font-medium text-primary">
+          Pricing: first deck is free, then ₹20 per additional deck.
+        </p>
       </div>
     </section>
   )

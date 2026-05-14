@@ -1,6 +1,9 @@
 import HomeHero from '@/components/home/HomeHero'
+import LegalQuickLinks from '@/components/home/LegalQuickLinks'
+import PricingSection from '@/components/home/PricingSection'
 import PromptComposer from '@/components/home/PromptComposer'
 import PresentationHistorySidebar from '@/components/home/PresentationHistorySidebar'
+import PaymentModal from '@/components/billing/PaymentModal'
 import { authClient } from '@/lib/auth-client'
 import { AUTH_LOGIN_PATH } from '@/lib/auth-path'
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
@@ -84,6 +87,10 @@ function HomePage() {
     useState<SourceImportValues>(defaultSourceValues)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isHistoryLoading, setIsHistoryLoading] = useState(true)
+  const [paymentModal, setPaymentModal] = useState<{ open: boolean; priceInr: number }>({
+    open: false,
+    priceInr: 20,
+  })
 
   const firstName = useMemo(() => {
     const full = data?.user.name.trim() ?? ''
@@ -165,10 +172,16 @@ function HomePage() {
       const result = (await response.json()) as {
         error?: string
         draftId?: string
+        paymentRequired?: boolean
+        priceInr?: number
       }
       if (!response.ok) {
         if (response.status === 401) {
           toast.error('Your session expired. Please sign in again.')
+          return
+        }
+        if (response.status === 402 || result.paymentRequired) {
+          setPaymentModal({ open: true, priceInr: result.priceInr ?? 20 })
           return
         }
         if (response.status === 400 && result.error === 'Invalid payload') {
@@ -202,6 +215,18 @@ function HomePage() {
   }, [formValues, loadHistory, navigate, sourceValues])
 
   return (
+    <>
+    <PaymentModal
+      open={paymentModal.open}
+      priceInr={paymentModal.priceInr}
+      userEmail={data?.user.email}
+      userName={data?.user.name}
+      onSuccess={() => {
+        setPaymentModal({ open: false, priceInr: 20 })
+        void handleGenerate()
+      }}
+      onClose={() => setPaymentModal({ open: false, priceInr: 20 })}
+    />
     <main className="relative min-h-screen overflow-hidden px-4 pb-16 pt-24 sm:px-6 lg:px-8">
       <div className="pointer-events-none absolute inset-x-6 top-0 -z-10 h-96 rounded-full bg-linear-to-br from-primary/15 via-transparent to-primary/10 blur-3xl" />
       <div className="mx-auto grid w-full max-w-7xl gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
@@ -212,6 +237,8 @@ function HomePage() {
           className="space-y-6"
         >
           <HomeHero firstName={firstName} />
+          <LegalQuickLinks />
+          <PricingSection />
           <PromptComposer
             values={formValues}
             onChange={setFormValues}
@@ -243,5 +270,6 @@ function HomePage() {
         </motion.section>
       </div>
     </main>
+    </>
   )
 }

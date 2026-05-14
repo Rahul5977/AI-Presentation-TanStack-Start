@@ -1,13 +1,22 @@
 import { authClient } from '#/lib/auth-client'
 // import { cn } from '@/lib/utils'
 import { Link, useRouter } from '@tanstack/react-router'
-import { BarChart3, LogOut, Moon, Presentation, Sun, User } from 'lucide-react'
+import {
+  BarChart3,
+  FileText,
+  LogOut,
+  Moon,
+  Presentation,
+  Sun,
+  User,
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
 import { Button } from './ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -15,6 +24,17 @@ import {
 } from './ui/dropdown-menu'
 
 type Theme = 'light' | 'dark'
+
+const legalLinks = [
+  { to: '/about-us', label: 'About Us' },
+  { to: '/contact-us', label: 'Contact Us' },
+  { to: '/privacy-policy', label: 'Privacy Policy' },
+  { to: '/terms-and-conditions', label: 'Terms & Conditions' },
+  {
+    to: '/refund-and-cancellation-policy',
+    label: 'Refund & Cancellation Policy',
+  },
+] as const
 
 function getInitialTheme(): Theme {
   if (typeof window === 'undefined') return 'dark'
@@ -62,8 +82,42 @@ export default function Navbar() {
             </span>
           </Link>
 
+          <div className="hidden md:flex items-center gap-1">
+            {legalLinks.map((item) => (
+              <Button
+                asChild
+                key={item.to}
+                variant="ghost"
+                size="sm"
+                className="rounded-xl text-xs text-muted-foreground hover:text-foreground"
+              >
+                <Link to={item.to}>{item.label}</Link>
+              </Button>
+            ))}
+          </div>
+
           {/* Right side */}
           <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-xl md:hidden">
+                  <FileText className="size-5" />
+                  <span className="sr-only">Open legal links</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64 glass border-border/50">
+                <DropdownMenuLabel>Legal</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  {legalLinks.map((item) => (
+                    <DropdownMenuItem key={item.to} asChild>
+                      <Link to={item.to}>{item.label}</Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             {session?.user ? (
               <Button asChild variant="ghost" size="sm" className="rounded-xl">
                 <Link to="/analytics" className="inline-flex items-center gap-1.5">

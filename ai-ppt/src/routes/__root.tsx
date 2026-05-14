@@ -6,6 +6,7 @@ import {
 } from '@tanstack/react-router'
 
 import Navbar from '@/components/navbar'
+import Footer from '@/components/Footer'
 
 import appCss from '../styles.css?url'
 
@@ -44,9 +45,12 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
 function RootLayout() {
   return (
-    <div className="min-h-svh">
+    <div className="flex min-h-svh flex-col">
       <Navbar />
-      <Outlet />
+      <div className="flex-1">
+        <Outlet />
+      </div>
+      <Footer />
     </div>
   )
 }

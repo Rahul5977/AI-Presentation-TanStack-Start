@@ -56,7 +56,7 @@ export default function SlideRenderer({ slide, template }: SlideRendererProps) {
           </h3>
           {slide.intent ? (
             <p
-              className="text-[var(--slide-muted)]"
+              className="text-(--slide-muted)"
               style={{
                 fontFamily: 'var(--slide-font-body)',
                 fontSize: 'var(--slide-body-size)',
@@ -104,14 +104,14 @@ export default function SlideRenderer({ slide, template }: SlideRendererProps) {
               src={slide.imageUrl}
               alt={slide.visualConcept ?? 'Slide visual'}
               className={cn(
-                'w-full border border-[var(--slide-border)] object-cover',
+                'w-full border border-(--slide-border) object-cover',
                 mediaFrameClass,
               )}
             />
           ) : (
             <div
               className={cn(
-                'flex h-full items-center justify-center border border-dashed border-[var(--slide-border)] px-3 text-center',
+                'flex h-full items-center justify-center border border-dashed border-(--slide-border) px-3 text-center',
                 mediaFrameClass,
               )}
             >

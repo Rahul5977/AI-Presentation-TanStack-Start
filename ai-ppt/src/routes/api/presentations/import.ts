@@ -8,6 +8,11 @@ import { captureWebException } from '@/server/observability/sentry'
 import { createDraftFromInput } from '@/server/presentations/outline-service'
 import { normalizePresentationInput } from '@/server/presentations/schemas'
 import {
+  assertDeckCreationAllowed,
+  DeckPaymentRequiredError,
+  deckPaymentErrorMessage,
+} from '@/server/billing/deck-access'
+import {
   buildPromptFromSource,
   extractImportSource,
 } from '@/server/presentations/source-import'
@@ -49,6 +54,7 @@ export const Route = createFileRoute('/api/presentations/import')({
             userId: session.user.id,
             bucket: 'import',
           })
+          await assertDeckCreationAllowed(session.user.id)
           await assertQuota(session.user.id, 'SOURCE_IMPORTS')
           await assertQuota(session.user.id, 'PRESENTATIONS_CREATED')
 
@@ -152,9 +158,21 @@ export const Route = createFileRoute('/api/presentations/import')({
           )
 
           const message =
-            error instanceof Error && error.name === 'RateLimitError'
-              ? rateLimitErrorMessage(error)
-              : quotaErrorMessage(error)
+            error instanceof DeckPaymentRequiredError
+              ? deckPaymentErrorMessage(error)
+              : error instanceof Error && error.name === 'RateLimitError'
+                ? rateLimitErrorMessage(error)
+                : quotaErrorMessage(error)
+          if (error instanceof DeckPaymentRequiredError) {
+            return json(
+              {
+                error: message,
+                paymentRequired: true,
+                priceInr: error.priceInr,
+              },
+              { status: 402 },
+            )
+          }
           const isQuota = message.startsWith('Quota reached') || message.startsWith('Rate limit')
           return json(
             { error: message },

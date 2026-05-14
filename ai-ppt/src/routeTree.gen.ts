@@ -9,9 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsAndConditionsRouteImport } from './routes/terms-and-conditions'
+import { Route as RefundAndCancellationPolicyRouteImport } from './routes/refund-and-cancellation-policy'
+import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as HomeRouteImport } from './routes/home'
+import { Route as ContactUsRouteImport } from './routes/contact-us'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
+import { Route as AboutUsRouteImport } from './routes/about-us'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as AbouUsRouteImport } from './routes/abou-us'
 import { Route as AuthRouteRouteImport } from './routes/_auth/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShareTokenRouteImport } from './routes/share/$token'
@@ -26,6 +32,8 @@ import { Route as ApiShareTokenRouteImport } from './routes/api/share/$token'
 import { Route as ApiPresentationsOutlineRouteImport } from './routes/api/presentations/outline'
 import { Route as ApiPresentationsImportRouteImport } from './routes/api/presentations/import'
 import { Route as ApiPresentationsHistoryRouteImport } from './routes/api/presentations/history'
+import { Route as ApiPaymentVerifyRouteImport } from './routes/api/payment/verify'
+import { Route as ApiPaymentCreateOrderRouteImport } from './routes/api/payment/create-order'
 import { Route as ApiHealthSystemRouteImport } from './routes/api/health/system'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiAnalyticsSummaryRouteImport } from './routes/api/analytics/summary'
@@ -56,9 +64,30 @@ import { Route as ApiPresentationsIdSlidesSlideIdImageRegenerateRouteImport } fr
 import { Route as ApiPresentationsIdSlidesSlideIdDuplicateRouteImport } from './routes/api/presentations/$id/slides/$slideId/duplicate'
 import { Route as ApiPresentationsIdSlidesSlideIdChatRouteImport } from './routes/api/presentations/$id/slides/$slideId/chat'
 
+const TermsAndConditionsRoute = TermsAndConditionsRouteImport.update({
+  id: '/terms-and-conditions',
+  path: '/terms-and-conditions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RefundAndCancellationPolicyRoute =
+  RefundAndCancellationPolicyRouteImport.update({
+    id: '/refund-and-cancellation-policy',
+    path: '/refund-and-cancellation-policy',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
+  id: '/privacy-policy',
+  path: '/privacy-policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HomeRoute = HomeRouteImport.update({
   id: '/home',
   path: '/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactUsRoute = ContactUsRouteImport.update({
+  id: '/contact-us',
+  path: '/contact-us',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AnalyticsRoute = AnalyticsRouteImport.update({
@@ -66,9 +95,19 @@ const AnalyticsRoute = AnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AboutUsRoute = AboutUsRouteImport.update({
+  id: '/about-us',
+  path: '/about-us',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AbouUsRoute = AbouUsRouteImport.update({
+  id: '/abou-us',
+  path: '/abou-us',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRouteRoute = AuthRouteRouteImport.update({
@@ -138,6 +177,16 @@ const ApiPresentationsImportRoute = ApiPresentationsImportRouteImport.update({
 const ApiPresentationsHistoryRoute = ApiPresentationsHistoryRouteImport.update({
   id: '/api/presentations/history',
   path: '/api/presentations/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPaymentVerifyRoute = ApiPaymentVerifyRouteImport.update({
+  id: '/api/payment/verify',
+  path: '/api/payment/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPaymentCreateOrderRoute = ApiPaymentCreateOrderRouteImport.update({
+  id: '/api/payment/create-order',
+  path: '/api/payment/create-order',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiHealthSystemRoute = ApiHealthSystemRouteImport.update({
@@ -310,9 +359,15 @@ const ApiPresentationsIdSlidesSlideIdChatRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/abou-us': typeof AbouUsRoute
   '/about': typeof AboutRoute
+  '/about-us': typeof AboutUsRoute
   '/analytics': typeof AnalyticsRoute
+  '/contact-us': typeof ContactUsRoute
   '/home': typeof HomeRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
+  '/refund-and-cancellation-policy': typeof RefundAndCancellationPolicyRoute
+  '/terms-and-conditions': typeof TermsAndConditionsRoute
   '/login': typeof AuthLoginRoute
   '/api/db-health': typeof ApiDbHealthRoute
   '/api/metrics': typeof ApiMetricsRoute
@@ -323,6 +378,8 @@ export interface FileRoutesByFullPath {
   '/api/analytics/summary': typeof ApiAnalyticsSummaryRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/system': typeof ApiHealthSystemRoute
+  '/api/payment/create-order': typeof ApiPaymentCreateOrderRoute
+  '/api/payment/verify': typeof ApiPaymentVerifyRoute
   '/api/presentations/history': typeof ApiPresentationsHistoryRoute
   '/api/presentations/import': typeof ApiPresentationsImportRoute
   '/api/presentations/outline': typeof ApiPresentationsOutlineRoute
@@ -357,9 +414,15 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/abou-us': typeof AbouUsRoute
   '/about': typeof AboutRoute
+  '/about-us': typeof AboutUsRoute
   '/analytics': typeof AnalyticsRoute
+  '/contact-us': typeof ContactUsRoute
   '/home': typeof HomeRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
+  '/refund-and-cancellation-policy': typeof RefundAndCancellationPolicyRoute
+  '/terms-and-conditions': typeof TermsAndConditionsRoute
   '/login': typeof AuthLoginRoute
   '/api/db-health': typeof ApiDbHealthRoute
   '/api/metrics': typeof ApiMetricsRoute
@@ -370,6 +433,8 @@ export interface FileRoutesByTo {
   '/api/analytics/summary': typeof ApiAnalyticsSummaryRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/system': typeof ApiHealthSystemRoute
+  '/api/payment/create-order': typeof ApiPaymentCreateOrderRoute
+  '/api/payment/verify': typeof ApiPaymentVerifyRoute
   '/api/presentations/history': typeof ApiPresentationsHistoryRoute
   '/api/presentations/import': typeof ApiPresentationsImportRoute
   '/api/presentations/outline': typeof ApiPresentationsOutlineRoute
@@ -406,9 +471,15 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_auth': typeof AuthRouteRouteWithChildren
+  '/abou-us': typeof AbouUsRoute
   '/about': typeof AboutRoute
+  '/about-us': typeof AboutUsRoute
   '/analytics': typeof AnalyticsRoute
+  '/contact-us': typeof ContactUsRoute
   '/home': typeof HomeRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
+  '/refund-and-cancellation-policy': typeof RefundAndCancellationPolicyRoute
+  '/terms-and-conditions': typeof TermsAndConditionsRoute
   '/_auth/login': typeof AuthLoginRoute
   '/api/db-health': typeof ApiDbHealthRoute
   '/api/metrics': typeof ApiMetricsRoute
@@ -419,6 +490,8 @@ export interface FileRoutesById {
   '/api/analytics/summary': typeof ApiAnalyticsSummaryRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/system': typeof ApiHealthSystemRoute
+  '/api/payment/create-order': typeof ApiPaymentCreateOrderRoute
+  '/api/payment/verify': typeof ApiPaymentVerifyRoute
   '/api/presentations/history': typeof ApiPresentationsHistoryRoute
   '/api/presentations/import': typeof ApiPresentationsImportRoute
   '/api/presentations/outline': typeof ApiPresentationsOutlineRoute
@@ -455,9 +528,15 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/abou-us'
     | '/about'
+    | '/about-us'
     | '/analytics'
+    | '/contact-us'
     | '/home'
+    | '/privacy-policy'
+    | '/refund-and-cancellation-policy'
+    | '/terms-and-conditions'
     | '/login'
     | '/api/db-health'
     | '/api/metrics'
@@ -468,6 +547,8 @@ export interface FileRouteTypes {
     | '/api/analytics/summary'
     | '/api/auth/$'
     | '/api/health/system'
+    | '/api/payment/create-order'
+    | '/api/payment/verify'
     | '/api/presentations/history'
     | '/api/presentations/import'
     | '/api/presentations/outline'
@@ -502,9 +583,15 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/abou-us'
     | '/about'
+    | '/about-us'
     | '/analytics'
+    | '/contact-us'
     | '/home'
+    | '/privacy-policy'
+    | '/refund-and-cancellation-policy'
+    | '/terms-and-conditions'
     | '/login'
     | '/api/db-health'
     | '/api/metrics'
@@ -515,6 +602,8 @@ export interface FileRouteTypes {
     | '/api/analytics/summary'
     | '/api/auth/$'
     | '/api/health/system'
+    | '/api/payment/create-order'
+    | '/api/payment/verify'
     | '/api/presentations/history'
     | '/api/presentations/import'
     | '/api/presentations/outline'
@@ -550,9 +639,15 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_auth'
+    | '/abou-us'
     | '/about'
+    | '/about-us'
     | '/analytics'
+    | '/contact-us'
     | '/home'
+    | '/privacy-policy'
+    | '/refund-and-cancellation-policy'
+    | '/terms-and-conditions'
     | '/_auth/login'
     | '/api/db-health'
     | '/api/metrics'
@@ -563,6 +658,8 @@ export interface FileRouteTypes {
     | '/api/analytics/summary'
     | '/api/auth/$'
     | '/api/health/system'
+    | '/api/payment/create-order'
+    | '/api/payment/verify'
     | '/api/presentations/history'
     | '/api/presentations/import'
     | '/api/presentations/outline'
@@ -599,9 +696,15 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
+  AbouUsRoute: typeof AbouUsRoute
   AboutRoute: typeof AboutRoute
+  AboutUsRoute: typeof AboutUsRoute
   AnalyticsRoute: typeof AnalyticsRoute
+  ContactUsRoute: typeof ContactUsRoute
   HomeRoute: typeof HomeRoute
+  PrivacyPolicyRoute: typeof PrivacyPolicyRoute
+  RefundAndCancellationPolicyRoute: typeof RefundAndCancellationPolicyRoute
+  TermsAndConditionsRoute: typeof TermsAndConditionsRoute
   ApiDbHealthRoute: typeof ApiDbHealthRoute
   ApiMetricsRoute: typeof ApiMetricsRoute
   OutlineDraftIdRoute: typeof OutlineDraftIdRoute
@@ -611,6 +714,8 @@ export interface RootRouteChildren {
   ApiAnalyticsSummaryRoute: typeof ApiAnalyticsSummaryRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiHealthSystemRoute: typeof ApiHealthSystemRoute
+  ApiPaymentCreateOrderRoute: typeof ApiPaymentCreateOrderRoute
+  ApiPaymentVerifyRoute: typeof ApiPaymentVerifyRoute
   ApiPresentationsHistoryRoute: typeof ApiPresentationsHistoryRoute
   ApiPresentationsImportRoute: typeof ApiPresentationsImportRoute
   ApiPresentationsOutlineRoute: typeof ApiPresentationsOutlineRoute
@@ -646,11 +751,39 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms-and-conditions': {
+      id: '/terms-and-conditions'
+      path: '/terms-and-conditions'
+      fullPath: '/terms-and-conditions'
+      preLoaderRoute: typeof TermsAndConditionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/refund-and-cancellation-policy': {
+      id: '/refund-and-cancellation-policy'
+      path: '/refund-and-cancellation-policy'
+      fullPath: '/refund-and-cancellation-policy'
+      preLoaderRoute: typeof RefundAndCancellationPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy-policy': {
+      id: '/privacy-policy'
+      path: '/privacy-policy'
+      fullPath: '/privacy-policy'
+      preLoaderRoute: typeof PrivacyPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/home': {
       id: '/home'
       path: '/home'
       fullPath: '/home'
       preLoaderRoute: typeof HomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact-us': {
+      id: '/contact-us'
+      path: '/contact-us'
+      fullPath: '/contact-us'
+      preLoaderRoute: typeof ContactUsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/analytics': {
@@ -660,11 +793,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnalyticsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/about-us': {
+      id: '/about-us'
+      path: '/about-us'
+      fullPath: '/about-us'
+      preLoaderRoute: typeof AboutUsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about': {
       id: '/about'
       path: '/about'
       fullPath: '/about'
       preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/abou-us': {
+      id: '/abou-us'
+      path: '/abou-us'
+      fullPath: '/abou-us'
+      preLoaderRoute: typeof AbouUsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_auth': {
@@ -763,6 +910,20 @@ declare module '@tanstack/react-router' {
       path: '/api/presentations/history'
       fullPath: '/api/presentations/history'
       preLoaderRoute: typeof ApiPresentationsHistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/payment/verify': {
+      id: '/api/payment/verify'
+      path: '/api/payment/verify'
+      fullPath: '/api/payment/verify'
+      preLoaderRoute: typeof ApiPaymentVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/payment/create-order': {
+      id: '/api/payment/create-order'
+      path: '/api/payment/create-order'
+      fullPath: '/api/payment/create-order'
+      preLoaderRoute: typeof ApiPaymentCreateOrderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/health/system': {
@@ -986,9 +1147,15 @@ const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRouteRoute: AuthRouteRouteWithChildren,
+  AbouUsRoute: AbouUsRoute,
   AboutRoute: AboutRoute,
+  AboutUsRoute: AboutUsRoute,
   AnalyticsRoute: AnalyticsRoute,
+  ContactUsRoute: ContactUsRoute,
   HomeRoute: HomeRoute,
+  PrivacyPolicyRoute: PrivacyPolicyRoute,
+  RefundAndCancellationPolicyRoute: RefundAndCancellationPolicyRoute,
+  TermsAndConditionsRoute: TermsAndConditionsRoute,
   ApiDbHealthRoute: ApiDbHealthRoute,
   ApiMetricsRoute: ApiMetricsRoute,
   OutlineDraftIdRoute: OutlineDraftIdRoute,
@@ -998,6 +1165,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAnalyticsSummaryRoute: ApiAnalyticsSummaryRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiHealthSystemRoute: ApiHealthSystemRoute,
+  ApiPaymentCreateOrderRoute: ApiPaymentCreateOrderRoute,
+  ApiPaymentVerifyRoute: ApiPaymentVerifyRoute,
   ApiPresentationsHistoryRoute: ApiPresentationsHistoryRoute,
   ApiPresentationsImportRoute: ApiPresentationsImportRoute,
   ApiPresentationsOutlineRoute: ApiPresentationsOutlineRoute,
