@@ -87,13 +87,29 @@ async function maybeServeStatic(request) {
   }
 
   if (isAssetRequest) {
-    return new Response("Not Found", {
-      status: 404,
-      headers: {
-        "Content-Type": "text/plain; charset=utf-8",
-        "Cache-Control": "no-store",
+    const ext = path.extname(pathname).toLowerCase();
+    const contentType =
+      MIME_TYPES[ext] ??
+      (ext === ".css"
+        ? "text/css; charset=utf-8"
+        : ext === ".js" || ext === ".mjs"
+          ? "text/javascript; charset=utf-8"
+          : "text/plain; charset=utf-8");
+    console.warn(`[web] Missing static asset: ${pathname} (serving 404 with ${contentType})`);
+    return new Response(
+      ext === ".css"
+        ? "/* Not found */"
+        : ext === ".js" || ext === ".mjs"
+          ? "// Not found"
+          : "Not Found",
+      {
+        status: 404,
+        headers: {
+          "Content-Type": contentType,
+          "Cache-Control": "no-store",
+        },
       },
-    });
+    );
   }
 
   return null;
