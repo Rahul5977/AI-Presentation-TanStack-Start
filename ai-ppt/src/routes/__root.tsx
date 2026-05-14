@@ -7,6 +7,7 @@ import {
 
 import Navbar from '@/components/navbar'
 import Footer from '@/components/Footer'
+import { ThemeProvider } from '@/providers/theme-provider'
 
 import appCss from '../styles.css?url'
 
@@ -29,7 +30,12 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'PPT.ai - Generate presentations from text',
+        title: 'PPT.ai — AI Presentation Studio',
+      },
+      {
+        name: 'description',
+        content:
+          'Create polished AI-powered presentation decks in minutes with flexible templates, image generation, and rapid export.',
       },
     ],
     links: [
@@ -45,19 +51,26 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
 function RootLayout() {
   return (
-    <div className="flex min-h-svh flex-col">
-      <Navbar />
-      <div className="flex-1">
-        <Outlet />
+    <ThemeProvider defaultMode="dark" defaultColorTheme="midnight">
+      <div className="flex min-h-svh flex-col">
+        <Navbar />
+        <div className="flex-1">
+          <Outlet />
+        </div>
+        <Footer />
       </div>
-      <Footer />
-    </div>
+    </ThemeProvider>
   )
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning className="dark">
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className="dark"
+      data-color-theme="midnight"
+    >
       <head>
         <HeadContent />
       </head>

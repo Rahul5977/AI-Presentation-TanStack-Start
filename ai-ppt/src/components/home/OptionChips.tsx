@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils'
+import { motion } from 'framer-motion'
 
 type OptionChip<T extends string> = {
   value: T
@@ -28,14 +29,15 @@ export default function OptionChips<T extends string>({
         {options.map((option) => {
           const isActive = option.value === value
           return (
-            <button
+            <motion.button
               key={option.value}
               type="button"
+              whileTap={{ scale: 0.96 }}
               className={cn(
-                'rounded-2xl border px-3.5 py-2 text-sm font-medium transition shadow-sm',
+                'rounded-xl border px-3.5 py-2 text-sm font-medium transition-all duration-150 shadow-sm',
                 isActive
-                  ? 'border-primary/60 bg-primary text-primary-foreground shadow-primary/20'
-                  : 'border-border/70 bg-background/70 text-muted-foreground hover:border-primary/40 hover:bg-background hover:text-foreground',
+                  ? 'border-primary/50 bg-primary text-primary-foreground shadow-md shadow-primary/20'
+                  : 'border-border/60 bg-background/70 text-muted-foreground hover:border-primary/40 hover:bg-background hover:text-foreground',
               )}
               aria-pressed={isActive}
               onClick={() => onChange(option.value)}
@@ -45,15 +47,13 @@ export default function OptionChips<T extends string>({
                 <span
                   className={cn(
                     'ml-1.5 text-[11px] font-normal',
-                    isActive
-                      ? 'text-primary-foreground/70'
-                      : 'text-muted-foreground',
+                    isActive ? 'text-primary-foreground/75' : 'text-muted-foreground/80',
                   )}
                 >
                   {option.hint}
                 </span>
               ) : null}
-            </button>
+            </motion.button>
           )
         })}
       </div>
