@@ -36,6 +36,12 @@ const defaultSourceValues: SourceImportValues = {
   sourceFile: null,
 }
 
+function isOutlineCreateSuccess(value: unknown): value is { draftId: string } {
+  if (!value || typeof value !== 'object') return false
+  const draftId = (value as { draftId?: unknown }).draftId
+  return typeof draftId === 'string' && draftId.length > 0
+}
+
 function normalizePresentationPayload(
   values: PresentationFormValues,
 ): PresentationFormValues {
@@ -212,8 +218,10 @@ function HomePage() {
         )
         return
       }
-      if (!result.draftId) {
-        toast.error('Outline was created but draft id is missing.')
+      if (!isOutlineCreateSuccess(result)) {
+        toast.error(
+          'The outline request did not return a valid draft. In DevTools → Network, open the POST whose Request URL is exactly …/api/presentations/outline (not another host named “outline”). Try Incognito with extensions off — wallet or payment extensions sometimes break fetch responses.',
+        )
         return
       }
       toast.success('Outline draft created.')
