@@ -3,11 +3,12 @@ import { prisma } from '@/lib/db'
 export const DECK_PRICE_INR = 20
 
 const OWNER_EMAILS = new Set(
-  ['rahu.raj9237@gmail.com'].map((value) => value.trim().toLowerCase()),
+  ['rahul.raj9237@gmail.com'].map((value) => value.trim().toLowerCase()),
 )
 
-const OWNER_USERNAMES = new Set(
-  ['Rahul5977'].map((value) => value.trim().toLowerCase()),
+/** Display names from OAuth (GitHub/Google `name`), not GitHub login — include common variants. */
+const OWNER_DISPLAY_NAMES = new Set(
+  ['Rahul5977', 'rahul raj', 'rahulraj', 'Rahul Raj'].map((value) => value.trim().toLowerCase()),
 )
 
 type UserIdentity = {
@@ -32,7 +33,7 @@ function normalize(value: string | null | undefined): string {
 export function isOwnerAccount(user: UserIdentity): boolean {
   const email = normalize(user.email)
   const name = normalize(user.name)
-  return OWNER_EMAILS.has(email) || OWNER_USERNAMES.has(name)
+  return OWNER_EMAILS.has(email) || OWNER_DISPLAY_NAMES.has(name)
 }
 
 async function getPaidDeckCredits(userId: string): Promise<number> {

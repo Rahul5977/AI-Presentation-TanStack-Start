@@ -169,11 +169,28 @@ function HomePage() {
             credentials: 'same-origin',
             body: JSON.stringify(payload),
           })
-      const result = (await response.json()) as {
+
+      const rawBody = await response.text()
+      let result: {
         error?: string
         draftId?: string
         paymentRequired?: boolean
         priceInr?: number
+      } = {}
+      if (rawBody.trim()) {
+        try {
+          result = JSON.parse(rawBody) as typeof result
+        } catch {
+          toast.error(
+            `Unexpected response from server (HTTP ${response.status}). If this persists, check web container logs.`,
+          )
+          return
+        }
+      } else if (!response.ok) {
+        toast.error(
+          `Request failed with HTTP ${response.status} and an empty body. Often a proxy timeout or crashed worker — check server logs.`,
+        )
+        return
       }
       if (!response.ok) {
         if (response.status === 401) {
@@ -207,8 +224,12 @@ function HomePage() {
         to: '/outline/$draftId',
         params: { draftId: result.draftId },
       })
-    } catch {
-      toast.error('Unable to create presentation. Please try again.')
+    } catch (err) {
+      const message =
+        err instanceof TypeError
+          ? 'Could not reach the server (network or connection was reset). Check the browser console for a net::… error and server logs.'
+          : 'Unable to create presentation. Please try again.'
+      toast.error(message)
     } finally {
       setIsSubmitting(false)
     }
