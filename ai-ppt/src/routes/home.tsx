@@ -177,6 +177,7 @@ function HomePage() {
           })
 
       const rawBody = await response.text()
+      const contentType = response.headers.get('content-type') ?? ''
       let result: {
         error?: string
         draftId?: string
@@ -187,12 +188,21 @@ function HomePage() {
         try {
           result = JSON.parse(rawBody) as typeof result
         } catch {
+          console.error('[generate] non-JSON response', {
+            status: response.status,
+            contentType,
+            bodyPreview: rawBody.slice(0, 400),
+          })
           toast.error(
-            `Unexpected response from server (HTTP ${response.status}). If this persists, check web container logs.`,
+            `Unexpected response from server (HTTP ${response.status}). Open DevTools → Console to see the raw body.`,
           )
           return
         }
       } else if (!response.ok) {
+        console.error('[generate] empty error response', {
+          status: response.status,
+          contentType,
+        })
         toast.error(
           `Request failed with HTTP ${response.status} and an empty body. Often a proxy timeout or crashed worker — check server logs.`,
         )
@@ -219,8 +229,14 @@ function HomePage() {
         return
       }
       if (!isOutlineCreateSuccess(result)) {
+        console.error('[generate] 200 OK but missing draftId', {
+          status: response.status,
+          contentType,
+          parsedKeys: Object.keys(result),
+          bodyPreview: rawBody.slice(0, 400),
+        })
         toast.error(
-          'The outline request did not return a valid draft. In DevTools → Network, open the POST whose Request URL is exactly …/api/presentations/outline (not another host named “outline”). Try Incognito with extensions off — wallet or payment extensions sometimes break fetch responses.',
+          'The outline request returned 200 but no draftId. Open DevTools → Console for the raw response, and check server logs.',
         )
         return
       }

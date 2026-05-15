@@ -1,4 +1,4 @@
-# AI-Presentation-TanStack-Start
+<!-- # AI-Presentation-TanStack-Start
 
 1. Pull your changes
 cd ~/AI-Presentation-TanStack-Start/ai-ppt
@@ -16,4 +16,4 @@ docker compose -f docker-compose.prod.yml --env-file .env.production up -d --bui
 
 4. Quick check
 docker compose -f docker-compose.prod.yml --env-file .env.production ps
-docker compose -f docker-compose.prod.yml --env-file .env.production logs web --tail 50
+docker compose -f docker-compose.prod.yml --env-file .env.production logs web --tail 50 -->
