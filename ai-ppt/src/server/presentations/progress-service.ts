@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db'
+import { canAccessPresentation } from '@/server/presentations/access'
 import { parseThemeOverrides } from '@/templates/theme'
 import type { ThemeOverrides } from '@/templates/theme'
 import type { TemplateKind } from '@/templates/schema'
@@ -14,6 +15,7 @@ export type PresentationProgress = {
   imageStyle: string
   isPublic: boolean
   shareToken: string | null
+  isOwner: boolean
   slides: Array<{
     id: string
     position: number
@@ -34,13 +36,17 @@ export async function getPresentationProgressForUser(
   userId: string,
   presentationId: string,
 ): Promise<PresentationProgress | null> {
+  // Owner OR an invited member (viewer/editor) may open the deck.
+  if (!(await canAccessPresentation(userId, presentationId, 'view'))) {
+    return null
+  }
   const presentation = await prisma.presentation.findFirst({
     where: {
       id: presentationId,
-      userId,
     },
     select: {
       id: true,
+      userId: true,
       title: true,
       status: true,
       template: true,
@@ -83,6 +89,7 @@ export async function getPresentationProgressForUser(
     imageStyle: presentation.imageStyle,
     isPublic: presentation.isPublic,
     shareToken: presentation.shareToken,
+    isOwner: presentation.userId === userId,
     slides: presentation.slides,
   }
 }

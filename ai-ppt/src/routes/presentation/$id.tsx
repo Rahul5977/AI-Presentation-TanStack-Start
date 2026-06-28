@@ -7,6 +7,7 @@ import SlideAssistantPanel from '@/components/editor/SlideAssistantPanel'
 import ShareDialog from '@/components/editor/ShareDialog'
 import ExportDialog from '@/components/editor/ExportDialog'
 import VersionHistoryDialog from '@/components/editor/VersionHistoryDialog'
+import MembersDialog from '@/components/editor/MembersDialog'
 import ThemeCustomizer from '@/components/editor/ThemeCustomizer'
 import { AUTH_LOGIN_PATH } from '@/lib/auth-path'
 import { getSession } from '@/lib/auth-function'
@@ -38,6 +39,7 @@ import {
   Plus,
   Presentation,
   Save,
+  Users,
 } from 'lucide-react'
 
 // ─── types ─────────────────────────────────────────────────────────────────
@@ -55,6 +57,7 @@ type PresentationState = {
   imageStyle: string
   isPublic: boolean
   shareToken: string | null
+  isOwner?: boolean
   slides: SlideProgress[]
 }
 
@@ -92,6 +95,7 @@ function PresentationProgressPage() {
   const [isApplyingTemplate, setIsApplyingTemplate] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'idle'>('idle')
   const [showShare, setShowShare] = useState(false)
+  const [showMembers, setShowMembers] = useState(false)
   const [showExport, setShowExport] = useState(false)
   const [showVersions, setShowVersions] = useState(false)
   const [showTheme, setShowTheme] = useState(false)
@@ -616,6 +620,12 @@ function PresentationProgressPage() {
                   <Link size={14} className="mr-1.5" />
                   Share
                 </Button>
+                {presentation.isOwner ? (
+                  <Button size="sm" variant="ghost" onClick={() => setShowMembers(true)}>
+                    <Users size={14} className="mr-1.5" />
+                    Collaborators
+                  </Button>
+                ) : null}
                 <Button size="sm" variant="ghost" onClick={() => setShowVersions(true)}>
                   <History size={14} className="mr-1.5" />
                   History
@@ -734,6 +744,11 @@ function PresentationProgressPage() {
       </div>
 
       {/* ── Dialogs ────────────────────────────────────────────────────── */}
+      <MembersDialog
+        open={showMembers}
+        onOpenChange={setShowMembers}
+        presentationId={id}
+      />
       <ShareDialog
         open={showShare}
         onClose={() => setShowShare(false)}

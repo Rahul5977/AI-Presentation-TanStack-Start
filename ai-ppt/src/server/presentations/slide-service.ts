@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@/lib/db'
+import { canAccessPresentation } from '@/server/presentations/access'
 import {
   publishSlideContentJob,
   publishSlideImageJob,
@@ -29,11 +30,11 @@ export async function getSlideForUser(
   presentationId: string,
   slideId: string,
 ): Promise<SlideData | null> {
+  if (!(await canAccessPresentation(userId, presentationId, 'view'))) return null
   const slide = await prisma.slide.findFirst({
     where: {
       id: slideId,
       presentationId,
-      presentation: { userId },
     },
     select: {
       id: true,
@@ -70,8 +71,9 @@ export async function updateSlideContent(
     layoutHints?: unknown
   },
 ): Promise<SlideData | null> {
+  if (!(await canAccessPresentation(userId, presentationId, 'edit'))) return null
   const existing = await prisma.slide.findFirst({
-    where: { id: slideId, presentationId, presentation: { userId } },
+    where: { id: slideId, presentationId },
     select: { id: true },
   })
   if (!existing) return null
@@ -110,11 +112,7 @@ export async function deleteSlide(
   presentationId: string,
   slideId: string,
 ): Promise<{ deletedId: string; slides: SlideData[] } | null> {
-  const presentation = await prisma.presentation.findFirst({
-    where: { id: presentationId, userId },
-    select: { id: true },
-  })
-  if (!presentation) return null
+  if (!(await canAccessPresentation(userId, presentationId, 'edit'))) return null
 
   const slide = await prisma.slide.findFirst({
     where: { id: slideId, presentationId },
@@ -148,11 +146,7 @@ export async function duplicateSlide(
   presentationId: string,
   slideId: string,
 ): Promise<{ newSlideId: string; slides: SlideData[] } | null> {
-  const presentation = await prisma.presentation.findFirst({
-    where: { id: presentationId, userId },
-    select: { id: true },
-  })
-  if (!presentation) return null
+  if (!(await canAccessPresentation(userId, presentationId, 'edit'))) return null
 
   const source = await prisma.slide.findFirst({
     where: { id: slideId, presentationId },
@@ -199,11 +193,7 @@ export async function reorderSlides(
   presentationId: string,
   slideIds: string[],
 ): Promise<SlideData[] | null> {
-  const presentation = await prisma.presentation.findFirst({
-    where: { id: presentationId, userId },
-    select: { id: true },
-  })
-  if (!presentation) return null
+  if (!(await canAccessPresentation(userId, presentationId, 'edit'))) return null
 
   await prisma.$transaction(async (tx) => {
     for (let i = 0; i < slideIds.length; i++) {
@@ -225,11 +215,7 @@ export async function addBlankSlide(
   userId: string,
   presentationId: string,
 ): Promise<{ newSlideId: string; slides: SlideData[] } | null> {
-  const presentation = await prisma.presentation.findFirst({
-    where: { id: presentationId, userId },
-    select: { id: true },
-  })
-  if (!presentation) return null
+  if (!(await canAccessPresentation(userId, presentationId, 'edit'))) return null
 
   const maxPos = await prisma.slide.aggregate({
     where: { presentationId },
@@ -265,8 +251,9 @@ export async function triggerSlideContentRegen(
   slideId: string,
   overrides: { prompt?: string; tone?: string; depth?: string },
 ): Promise<{ jobId: string } | null> {
-  const presentation = await prisma.presentation.findFirst({
-    where: { id: presentationId, userId },
+  if (!(await canAccessPresentation(userId, presentationId, 'edit'))) return null
+  const presentation = await prisma.presentation.findUnique({
+    where: { id: presentationId },
     select: { id: true, prompt: true, tone: true, depth: true, language: true },
   })
   if (!presentation) return null
@@ -317,8 +304,9 @@ export async function triggerSlideImageRegen(
   slideId: string,
   overrides: { imageStyle?: string },
 ): Promise<{ jobId: string } | null> {
-  const presentation = await prisma.presentation.findFirst({
-    where: { id: presentationId, userId },
+  if (!(await canAccessPresentation(userId, presentationId, 'edit'))) return null
+  const presentation = await prisma.presentation.findUnique({
+    where: { id: presentationId },
     select: { id: true, imageStyle: true },
   })
   if (!presentation) return null
