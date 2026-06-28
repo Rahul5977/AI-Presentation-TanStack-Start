@@ -245,6 +245,42 @@ export async function addBlankSlide(
   return { newSlideId: created.id, slides }
 }
 
+/** Insert a fully-authored slide after a given position (used by the deck agent). */
+export async function insertSlideWithContent(
+  userId: string,
+  presentationId: string,
+  afterPosition: number,
+  content: { title: string; intent: string; bullets: string[] },
+): Promise<{ newSlideId: string } | null> {
+  if (!(await canAccessPresentation(userId, presentationId, 'edit'))) return null
+
+  let newSlideId = ''
+  await prisma.$transaction(async (tx) => {
+    await tx.slide.updateMany({
+      where: { presentationId, position: { gt: afterPosition } },
+      data: { position: { increment: 1 } },
+    })
+    const created = await tx.slide.create({
+      data: {
+        presentationId,
+        position: afterPosition + 1,
+        title: content.title,
+        intent: content.intent,
+        bullets: content.bullets,
+        visualConcept: content.title,
+        status: 'READY',
+      },
+      select: { id: true },
+    })
+    newSlideId = created.id
+    await tx.presentation.update({
+      where: { id: presentationId },
+      data: { lastEditedAt: new Date() },
+    })
+  })
+  return { newSlideId }
+}
+
 export async function triggerSlideContentRegen(
   userId: string,
   presentationId: string,

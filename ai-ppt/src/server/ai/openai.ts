@@ -24,7 +24,7 @@ type OutlineGenerationResult = {
 
 let cachedClient: OpenAI | null = null
 
-function getOpenAIClient() {
+export function getOpenAIClient() {
   if (cachedClient) return cachedClient
 
   const apiKey = process.env.OPENAI_API_KEY
@@ -34,6 +34,10 @@ function getOpenAIClient() {
 
   cachedClient = new OpenAI({ apiKey })
   return cachedClient
+}
+
+export function isOpenAIConfigured() {
+  return Boolean(process.env.OPENAI_API_KEY?.trim())
 }
 
 function getOutlineModel() {

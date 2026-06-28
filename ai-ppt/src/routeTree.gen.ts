@@ -55,6 +55,7 @@ import { Route as ApiPresentationsIdExportRouteImport } from './routes/api/prese
 import { Route as ApiPresentationsIdEventsRouteImport } from './routes/api/presentations/$id/events'
 import { Route as ApiPresentationsIdCitationModeRouteImport } from './routes/api/presentations/$id/citation-mode'
 import { Route as ApiPresentationsIdBrandKitRouteImport } from './routes/api/presentations/$id/brand-kit'
+import { Route as ApiPresentationsIdAgentRouteImport } from './routes/api/presentations/$id/agent'
 import { Route as ApiHealthWorkersWorkerClassRouteImport } from './routes/api/health/workers/$workerClass'
 import { Route as ApiDraftsDraftIdRegenerateRouteImport } from './routes/api/drafts/$draftId/regenerate'
 import { Route as ApiDraftsDraftIdGenerateRouteImport } from './routes/api/drafts/$draftId/generate'
@@ -310,6 +311,11 @@ const ApiPresentationsIdBrandKitRoute =
     path: '/api/presentations/$id/brand-kit',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPresentationsIdAgentRoute = ApiPresentationsIdAgentRouteImport.update({
+  id: '/api/presentations/$id/agent',
+  path: '/api/presentations/$id/agent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiHealthWorkersWorkerClassRoute =
   ApiHealthWorkersWorkerClassRouteImport.update({
     id: '/api/health/workers/$workerClass',
@@ -451,6 +457,7 @@ export interface FileRoutesByFullPath {
   '/api/drafts/$draftId/generate': typeof ApiDraftsDraftIdGenerateRoute
   '/api/drafts/$draftId/regenerate': typeof ApiDraftsDraftIdRegenerateRoute
   '/api/health/workers/$workerClass': typeof ApiHealthWorkersWorkerClassRoute
+  '/api/presentations/$id/agent': typeof ApiPresentationsIdAgentRoute
   '/api/presentations/$id/brand-kit': typeof ApiPresentationsIdBrandKitRoute
   '/api/presentations/$id/citation-mode': typeof ApiPresentationsIdCitationModeRoute
   '/api/presentations/$id/events': typeof ApiPresentationsIdEventsRoute
@@ -515,6 +522,7 @@ export interface FileRoutesByTo {
   '/api/drafts/$draftId/generate': typeof ApiDraftsDraftIdGenerateRoute
   '/api/drafts/$draftId/regenerate': typeof ApiDraftsDraftIdRegenerateRoute
   '/api/health/workers/$workerClass': typeof ApiHealthWorkersWorkerClassRoute
+  '/api/presentations/$id/agent': typeof ApiPresentationsIdAgentRoute
   '/api/presentations/$id/brand-kit': typeof ApiPresentationsIdBrandKitRoute
   '/api/presentations/$id/citation-mode': typeof ApiPresentationsIdCitationModeRoute
   '/api/presentations/$id/events': typeof ApiPresentationsIdEventsRoute
@@ -581,6 +589,7 @@ export interface FileRoutesById {
   '/api/drafts/$draftId/generate': typeof ApiDraftsDraftIdGenerateRoute
   '/api/drafts/$draftId/regenerate': typeof ApiDraftsDraftIdRegenerateRoute
   '/api/health/workers/$workerClass': typeof ApiHealthWorkersWorkerClassRoute
+  '/api/presentations/$id/agent': typeof ApiPresentationsIdAgentRoute
   '/api/presentations/$id/brand-kit': typeof ApiPresentationsIdBrandKitRoute
   '/api/presentations/$id/citation-mode': typeof ApiPresentationsIdCitationModeRoute
   '/api/presentations/$id/events': typeof ApiPresentationsIdEventsRoute
@@ -647,6 +656,7 @@ export interface FileRouteTypes {
     | '/api/drafts/$draftId/generate'
     | '/api/drafts/$draftId/regenerate'
     | '/api/health/workers/$workerClass'
+    | '/api/presentations/$id/agent'
     | '/api/presentations/$id/brand-kit'
     | '/api/presentations/$id/citation-mode'
     | '/api/presentations/$id/events'
@@ -711,6 +721,7 @@ export interface FileRouteTypes {
     | '/api/drafts/$draftId/generate'
     | '/api/drafts/$draftId/regenerate'
     | '/api/health/workers/$workerClass'
+    | '/api/presentations/$id/agent'
     | '/api/presentations/$id/brand-kit'
     | '/api/presentations/$id/citation-mode'
     | '/api/presentations/$id/events'
@@ -776,6 +787,7 @@ export interface FileRouteTypes {
     | '/api/drafts/$draftId/generate'
     | '/api/drafts/$draftId/regenerate'
     | '/api/health/workers/$workerClass'
+    | '/api/presentations/$id/agent'
     | '/api/presentations/$id/brand-kit'
     | '/api/presentations/$id/citation-mode'
     | '/api/presentations/$id/events'
@@ -841,6 +853,7 @@ export interface RootRouteChildren {
   ApiDraftsDraftIdGenerateRoute: typeof ApiDraftsDraftIdGenerateRoute
   ApiDraftsDraftIdRegenerateRoute: typeof ApiDraftsDraftIdRegenerateRoute
   ApiHealthWorkersWorkerClassRoute: typeof ApiHealthWorkersWorkerClassRoute
+  ApiPresentationsIdAgentRoute: typeof ApiPresentationsIdAgentRoute
   ApiPresentationsIdBrandKitRoute: typeof ApiPresentationsIdBrandKitRoute
   ApiPresentationsIdCitationModeRoute: typeof ApiPresentationsIdCitationModeRoute
   ApiPresentationsIdEventsRoute: typeof ApiPresentationsIdEventsRoute
@@ -1191,6 +1204,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPresentationsIdBrandKitRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/presentations/$id/agent': {
+      id: '/api/presentations/$id/agent'
+      path: '/api/presentations/$id/agent'
+      fullPath: '/api/presentations/$id/agent'
+      preLoaderRoute: typeof ApiPresentationsIdAgentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/health/workers/$workerClass': {
       id: '/api/health/workers/$workerClass'
       path: '/api/health/workers/$workerClass'
@@ -1364,6 +1384,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiDraftsDraftIdGenerateRoute: ApiDraftsDraftIdGenerateRoute,
   ApiDraftsDraftIdRegenerateRoute: ApiDraftsDraftIdRegenerateRoute,
   ApiHealthWorkersWorkerClassRoute: ApiHealthWorkersWorkerClassRoute,
+  ApiPresentationsIdAgentRoute: ApiPresentationsIdAgentRoute,
   ApiPresentationsIdBrandKitRoute: ApiPresentationsIdBrandKitRoute,
   ApiPresentationsIdCitationModeRoute: ApiPresentationsIdCitationModeRoute,
   ApiPresentationsIdEventsRoute: ApiPresentationsIdEventsRoute,

@@ -8,6 +8,7 @@ import ShareDialog from '@/components/editor/ShareDialog'
 import ExportDialog from '@/components/editor/ExportDialog'
 import VersionHistoryDialog from '@/components/editor/VersionHistoryDialog'
 import MembersDialog from '@/components/editor/MembersDialog'
+import DeckAssistantDialog from '@/components/editor/DeckAssistantDialog'
 import ThemeCustomizer from '@/components/editor/ThemeCustomizer'
 import { AUTH_LOGIN_PATH } from '@/lib/auth-path'
 import { getSession } from '@/lib/auth-function'
@@ -32,6 +33,7 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable'
 import {
+  Bot,
   Download,
   Link,
   History,
@@ -96,6 +98,7 @@ function PresentationProgressPage() {
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'idle'>('idle')
   const [showShare, setShowShare] = useState(false)
   const [showMembers, setShowMembers] = useState(false)
+  const [showDeckAgent, setShowDeckAgent] = useState(false)
   const [showExport, setShowExport] = useState(false)
   const [showVersions, setShowVersions] = useState(false)
   const [showTheme, setShowTheme] = useState(false)
@@ -604,6 +607,10 @@ function PresentationProgressPage() {
             {/* Editor-only actions */}
             {isEditorMode && (
               <>
+                <Button size="sm" onClick={() => setShowDeckAgent(true)}>
+                  <Bot size={14} className="mr-1.5" />
+                  Deck AI
+                </Button>
                 <Button
                   size="sm"
                   variant="outline"
@@ -748,6 +755,12 @@ function PresentationProgressPage() {
         open={showMembers}
         onOpenChange={setShowMembers}
         presentationId={id}
+      />
+      <DeckAssistantDialog
+        open={showDeckAgent}
+        onOpenChange={setShowDeckAgent}
+        presentationId={id}
+        onApplied={() => void loadPresentation()}
       />
       <ShareDialog
         open={showShare}
