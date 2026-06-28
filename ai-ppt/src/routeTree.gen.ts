@@ -29,6 +29,7 @@ import { Route as ApiDbHealthRouteImport } from './routes/api/db-health'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as ApiPresentationsIndexRouteImport } from './routes/api/presentations/index'
 import { Route as ApiBrandKitsIndexRouteImport } from './routes/api/brand-kits/index'
+import { Route as ApiWebhooksPaddleRouteImport } from './routes/api/webhooks/paddle'
 import { Route as ApiShareTokenRouteImport } from './routes/api/share/$token'
 import { Route as ApiPresentationsOutlineRouteImport } from './routes/api/presentations/outline'
 import { Route as ApiPresentationsImportRouteImport } from './routes/api/presentations/import'
@@ -37,6 +38,9 @@ import { Route as ApiPaymentVerifyRouteImport } from './routes/api/payment/verif
 import { Route as ApiPaymentCreateOrderRouteImport } from './routes/api/payment/create-order'
 import { Route as ApiHealthSystemRouteImport } from './routes/api/health/system'
 import { Route as ApiBrandKitsKitIdRouteImport } from './routes/api/brand-kits/$kitId'
+import { Route as ApiBillingPortalRouteImport } from './routes/api/billing/portal'
+import { Route as ApiBillingMeRouteImport } from './routes/api/billing/me'
+import { Route as ApiBillingCheckoutRouteImport } from './routes/api/billing/checkout'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiAnalyticsSummaryRouteImport } from './routes/api/analytics/summary'
 import { Route as ApiPresentationsIdIndexRouteImport } from './routes/api/presentations/$id/index'
@@ -168,6 +172,11 @@ const ApiBrandKitsIndexRoute = ApiBrandKitsIndexRouteImport.update({
   path: '/api/brand-kits/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiWebhooksPaddleRoute = ApiWebhooksPaddleRouteImport.update({
+  id: '/api/webhooks/paddle',
+  path: '/api/webhooks/paddle',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiShareTokenRoute = ApiShareTokenRouteImport.update({
   id: '/api/share/$token',
   path: '/api/share/$token',
@@ -206,6 +215,21 @@ const ApiHealthSystemRoute = ApiHealthSystemRouteImport.update({
 const ApiBrandKitsKitIdRoute = ApiBrandKitsKitIdRouteImport.update({
   id: '/api/brand-kits/$kitId',
   path: '/api/brand-kits/$kitId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBillingPortalRoute = ApiBillingPortalRouteImport.update({
+  id: '/api/billing/portal',
+  path: '/api/billing/portal',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBillingMeRoute = ApiBillingMeRouteImport.update({
+  id: '/api/billing/me',
+  path: '/api/billing/me',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBillingCheckoutRoute = ApiBillingCheckoutRouteImport.update({
+  id: '/api/billing/checkout',
+  path: '/api/billing/checkout',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -402,6 +426,9 @@ export interface FileRoutesByFullPath {
   '/share/$token': typeof ShareTokenRoute
   '/api/analytics/summary': typeof ApiAnalyticsSummaryRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/billing/checkout': typeof ApiBillingCheckoutRoute
+  '/api/billing/me': typeof ApiBillingMeRoute
+  '/api/billing/portal': typeof ApiBillingPortalRoute
   '/api/brand-kits/$kitId': typeof ApiBrandKitsKitIdRoute
   '/api/health/system': typeof ApiHealthSystemRoute
   '/api/payment/create-order': typeof ApiPaymentCreateOrderRoute
@@ -410,6 +437,7 @@ export interface FileRoutesByFullPath {
   '/api/presentations/import': typeof ApiPresentationsImportRoute
   '/api/presentations/outline': typeof ApiPresentationsOutlineRoute
   '/api/share/$token': typeof ApiShareTokenRoute
+  '/api/webhooks/paddle': typeof ApiWebhooksPaddleRoute
   '/api/brand-kits/': typeof ApiBrandKitsIndexRoute
   '/api/presentations/': typeof ApiPresentationsIndexRoute
   '/api/drafts/$draftId/events': typeof ApiDraftsDraftIdEventsRoute
@@ -461,6 +489,9 @@ export interface FileRoutesByTo {
   '/share/$token': typeof ShareTokenRoute
   '/api/analytics/summary': typeof ApiAnalyticsSummaryRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/billing/checkout': typeof ApiBillingCheckoutRoute
+  '/api/billing/me': typeof ApiBillingMeRoute
+  '/api/billing/portal': typeof ApiBillingPortalRoute
   '/api/brand-kits/$kitId': typeof ApiBrandKitsKitIdRoute
   '/api/health/system': typeof ApiHealthSystemRoute
   '/api/payment/create-order': typeof ApiPaymentCreateOrderRoute
@@ -469,6 +500,7 @@ export interface FileRoutesByTo {
   '/api/presentations/import': typeof ApiPresentationsImportRoute
   '/api/presentations/outline': typeof ApiPresentationsOutlineRoute
   '/api/share/$token': typeof ApiShareTokenRoute
+  '/api/webhooks/paddle': typeof ApiWebhooksPaddleRoute
   '/api/brand-kits': typeof ApiBrandKitsIndexRoute
   '/api/presentations': typeof ApiPresentationsIndexRoute
   '/api/drafts/$draftId/events': typeof ApiDraftsDraftIdEventsRoute
@@ -522,6 +554,9 @@ export interface FileRoutesById {
   '/share/$token': typeof ShareTokenRoute
   '/api/analytics/summary': typeof ApiAnalyticsSummaryRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/billing/checkout': typeof ApiBillingCheckoutRoute
+  '/api/billing/me': typeof ApiBillingMeRoute
+  '/api/billing/portal': typeof ApiBillingPortalRoute
   '/api/brand-kits/$kitId': typeof ApiBrandKitsKitIdRoute
   '/api/health/system': typeof ApiHealthSystemRoute
   '/api/payment/create-order': typeof ApiPaymentCreateOrderRoute
@@ -530,6 +565,7 @@ export interface FileRoutesById {
   '/api/presentations/import': typeof ApiPresentationsImportRoute
   '/api/presentations/outline': typeof ApiPresentationsOutlineRoute
   '/api/share/$token': typeof ApiShareTokenRoute
+  '/api/webhooks/paddle': typeof ApiWebhooksPaddleRoute
   '/api/brand-kits/': typeof ApiBrandKitsIndexRoute
   '/api/presentations/': typeof ApiPresentationsIndexRoute
   '/api/drafts/$draftId/events': typeof ApiDraftsDraftIdEventsRoute
@@ -583,6 +619,9 @@ export interface FileRouteTypes {
     | '/share/$token'
     | '/api/analytics/summary'
     | '/api/auth/$'
+    | '/api/billing/checkout'
+    | '/api/billing/me'
+    | '/api/billing/portal'
     | '/api/brand-kits/$kitId'
     | '/api/health/system'
     | '/api/payment/create-order'
@@ -591,6 +630,7 @@ export interface FileRouteTypes {
     | '/api/presentations/import'
     | '/api/presentations/outline'
     | '/api/share/$token'
+    | '/api/webhooks/paddle'
     | '/api/brand-kits/'
     | '/api/presentations/'
     | '/api/drafts/$draftId/events'
@@ -642,6 +682,9 @@ export interface FileRouteTypes {
     | '/share/$token'
     | '/api/analytics/summary'
     | '/api/auth/$'
+    | '/api/billing/checkout'
+    | '/api/billing/me'
+    | '/api/billing/portal'
     | '/api/brand-kits/$kitId'
     | '/api/health/system'
     | '/api/payment/create-order'
@@ -650,6 +693,7 @@ export interface FileRouteTypes {
     | '/api/presentations/import'
     | '/api/presentations/outline'
     | '/api/share/$token'
+    | '/api/webhooks/paddle'
     | '/api/brand-kits'
     | '/api/presentations'
     | '/api/drafts/$draftId/events'
@@ -702,6 +746,9 @@ export interface FileRouteTypes {
     | '/share/$token'
     | '/api/analytics/summary'
     | '/api/auth/$'
+    | '/api/billing/checkout'
+    | '/api/billing/me'
+    | '/api/billing/portal'
     | '/api/brand-kits/$kitId'
     | '/api/health/system'
     | '/api/payment/create-order'
@@ -710,6 +757,7 @@ export interface FileRouteTypes {
     | '/api/presentations/import'
     | '/api/presentations/outline'
     | '/api/share/$token'
+    | '/api/webhooks/paddle'
     | '/api/brand-kits/'
     | '/api/presentations/'
     | '/api/drafts/$draftId/events'
@@ -762,6 +810,9 @@ export interface RootRouteChildren {
   ShareTokenRoute: typeof ShareTokenRoute
   ApiAnalyticsSummaryRoute: typeof ApiAnalyticsSummaryRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiBillingCheckoutRoute: typeof ApiBillingCheckoutRoute
+  ApiBillingMeRoute: typeof ApiBillingMeRoute
+  ApiBillingPortalRoute: typeof ApiBillingPortalRoute
   ApiBrandKitsKitIdRoute: typeof ApiBrandKitsKitIdRoute
   ApiHealthSystemRoute: typeof ApiHealthSystemRoute
   ApiPaymentCreateOrderRoute: typeof ApiPaymentCreateOrderRoute
@@ -770,6 +821,7 @@ export interface RootRouteChildren {
   ApiPresentationsImportRoute: typeof ApiPresentationsImportRoute
   ApiPresentationsOutlineRoute: typeof ApiPresentationsOutlineRoute
   ApiShareTokenRoute: typeof ApiShareTokenRoute
+  ApiWebhooksPaddleRoute: typeof ApiWebhooksPaddleRoute
   ApiBrandKitsIndexRoute: typeof ApiBrandKitsIndexRoute
   ApiPresentationsIndexRoute: typeof ApiPresentationsIndexRoute
   ApiDraftsDraftIdEventsRoute: typeof ApiDraftsDraftIdEventsRoute
@@ -944,6 +996,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiBrandKitsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/webhooks/paddle': {
+      id: '/api/webhooks/paddle'
+      path: '/api/webhooks/paddle'
+      fullPath: '/api/webhooks/paddle'
+      preLoaderRoute: typeof ApiWebhooksPaddleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/share/$token': {
       id: '/api/share/$token'
       path: '/api/share/$token'
@@ -998,6 +1057,27 @@ declare module '@tanstack/react-router' {
       path: '/api/brand-kits/$kitId'
       fullPath: '/api/brand-kits/$kitId'
       preLoaderRoute: typeof ApiBrandKitsKitIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/billing/portal': {
+      id: '/api/billing/portal'
+      path: '/api/billing/portal'
+      fullPath: '/api/billing/portal'
+      preLoaderRoute: typeof ApiBillingPortalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/billing/me': {
+      id: '/api/billing/me'
+      path: '/api/billing/me'
+      fullPath: '/api/billing/me'
+      preLoaderRoute: typeof ApiBillingMeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/billing/checkout': {
+      id: '/api/billing/checkout'
+      path: '/api/billing/checkout'
+      fullPath: '/api/billing/checkout'
+      preLoaderRoute: typeof ApiBillingCheckoutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
@@ -1245,6 +1325,9 @@ const rootRouteChildren: RootRouteChildren = {
   ShareTokenRoute: ShareTokenRoute,
   ApiAnalyticsSummaryRoute: ApiAnalyticsSummaryRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiBillingCheckoutRoute: ApiBillingCheckoutRoute,
+  ApiBillingMeRoute: ApiBillingMeRoute,
+  ApiBillingPortalRoute: ApiBillingPortalRoute,
   ApiBrandKitsKitIdRoute: ApiBrandKitsKitIdRoute,
   ApiHealthSystemRoute: ApiHealthSystemRoute,
   ApiPaymentCreateOrderRoute: ApiPaymentCreateOrderRoute,
@@ -1253,6 +1336,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPresentationsImportRoute: ApiPresentationsImportRoute,
   ApiPresentationsOutlineRoute: ApiPresentationsOutlineRoute,
   ApiShareTokenRoute: ApiShareTokenRoute,
+  ApiWebhooksPaddleRoute: ApiWebhooksPaddleRoute,
   ApiBrandKitsIndexRoute: ApiBrandKitsIndexRoute,
   ApiPresentationsIndexRoute: ApiPresentationsIndexRoute,
   ApiDraftsDraftIdEventsRoute: ApiDraftsDraftIdEventsRoute,

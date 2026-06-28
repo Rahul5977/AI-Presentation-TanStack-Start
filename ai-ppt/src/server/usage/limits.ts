@@ -3,11 +3,11 @@ import type { SubscriptionPlan, UsageMetric } from '@/generated/prisma/client'
 type QuotaConfig = Record<UsageMetric, number>
 
 const DEFAULT_FREE: QuotaConfig = {
-  PRESENTATIONS_CREATED: 20,
-  SLIDES_GENERATED: 200,
-  EXPORTS: 25,
-  SOURCE_IMPORTS: 40,
-  SLIDE_ASSISTANT_REQUESTS: 150,
+  PRESENTATIONS_CREATED: 5,
+  SLIDES_GENERATED: 60,
+  EXPORTS: 10,
+  SOURCE_IMPORTS: 10,
+  SLIDE_ASSISTANT_REQUESTS: 50,
 }
 
 const DEFAULT_PRO: QuotaConfig = {

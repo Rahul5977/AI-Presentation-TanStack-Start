@@ -105,6 +105,14 @@ enum SubscriptionPlan {
   PRO
 }
 
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
 enum UsageMetric {
   PRESENTATIONS_CREATED
   SLIDES_GENERATED
@@ -152,9 +160,47 @@ model User {
   usageCounters UserUsageCounter[]
   deckPayments  DeckPayment[]
   brandKits     BrandKit[]
+  subscription  Subscription?
 
   @@unique([email])
   @@map("user")
+}
+
+// Gateway-agnostic subscription record. One per user. The billing webhook is the
+// sole source of truth; it upserts this row and mirrors `plan` onto
+// User.subscriptionPlan so the existing quota system keeps working unchanged.
+model Subscription {
+  id                   String             @id @default(cuid())
+  userId               String             @unique
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gateway              String             @default("paddle")
+  gatewayCustomerId    String?
+  gatewaySubscriptionId String?           @unique
+  priceId              String?
+  plan                 SubscriptionPlan   @default(FREE)
+  status               SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@index([gatewayCustomerId])
+  @@map("subscription")
+}
+
+// Append-only billing webhook log for idempotency + audit. The gateway's unique
+// event id guards against duplicate/replayed deliveries.
+model WebhookEvent {
+  id             String   @id @default(cuid())
+  gateway        String   @default("paddle")
+  gatewayEventId String   @unique
+  type           String
+  payload        Json
+  processedAt    DateTime @default(now())
+
+  @@index([type, processedAt])
+  @@map("webhook_event")
 }
 
 // A reusable brand theme owned by a user: a base template plus saved overrides
