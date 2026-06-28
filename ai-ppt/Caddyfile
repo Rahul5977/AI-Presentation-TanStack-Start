@@ -10,7 +10,7 @@ kodexa.in {
     X-Content-Type-Options "nosniff"
     X-Frame-Options "SAMEORIGIN"
     Referrer-Policy "strict-origin-when-cross-origin"
-    Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://*.razorpay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https: http:; connect-src 'self' https://api.razorpay.com https://*.razorpay.com https://ik.imagekit.io; frame-src https://api.razorpay.com https://*.razorpay.com; object-src 'none'; base-uri 'self';"
+    Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.paddle.com https://*.paddleedge.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.paddle.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https: http:; connect-src 'self' https://*.paddle.com https://*.paddleedge.com https://ik.imagekit.io; frame-src https://*.paddle.com; object-src 'none'; base-uri 'self';"
   }
 
   @html {
@@ -36,9 +36,17 @@ kodexa.in {
   }
   header @assets Cache-Control "public, max-age=31536000, immutable"
 
-  reverse_proxy web:3000 {
-    health_uri /api/health/system
-    health_interval 15s
-    health_timeout 5s
+  # Load-balance across all `web` replicas. Docker DNS resolves the service name
+  # to every replica IP; `dynamic a` re-resolves periodically and round-robins.
+  # Passive retries skip a replica that's being recreated during a deploy.
+  reverse_proxy {
+    dynamic a {
+      name web
+      port 3000
+      refresh 10s
+    }
+    lb_policy round_robin
+    lb_try_duration 10s
+    lb_try_interval 250ms
   }
 }

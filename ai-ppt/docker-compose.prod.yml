@@ -2,6 +2,7 @@ services:
   caddy:
     image: caddy:2.9-alpine
     restart: unless-stopped
+    mem_limit: 192m
     ports:
       - "80:80"
       - "443:443"
@@ -18,6 +19,11 @@ services:
       context: .
       dockerfile: Dockerfile.web
     restart: unless-stopped
+    mem_limit: 1g
+    cpus: 1.0
+    # Two replicas for resilience + rolling deploys (Caddy load-balances them).
+    deploy:
+      replicas: 2
     env_file:
       - ./.env.production
     environment:
@@ -26,6 +32,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      pgbouncer:
+        condition: service_started
       rabbitmq:
         condition: service_healthy
       redis:
@@ -42,13 +50,42 @@ services:
       timeout: 5s
       retries: 10
 
+  # Connection pooler (SESSION mode — required because the app uses Prisma
+  # interactive $transaction, which transaction-mode pooling breaks). Bounds the
+  # number of server-side Postgres connections so 2 web + 3 worker replicas can
+  # never exhaust max_connections.
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    restart: unless-stopped
+    mem_limit: 128m
+    env_file:
+      - ./.env.production
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      DB_NAME: ${POSTGRES_DB:-aippt}
+      POOL_MODE: session
+      AUTH_TYPE: scram-sha-256
+      MAX_CLIENT_CONN: "200"
+      DEFAULT_POOL_SIZE: "20"
+      LISTEN_PORT: "5432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   migrate:
     build:
       context: .
       dockerfile: Dockerfile.web
     profiles: ["ops"]
+    mem_limit: 512m
     env_file:
       - ./.env.production
+    environment:
+      # Migrations must talk to Postgres DIRECTLY (not via the pooler).
+      DIRECT_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-aippt}?sslmode=disable"
     command: ["npm", "run", "db:migrate:deploy"]
     depends_on:
       postgres:
@@ -59,6 +96,8 @@ services:
       context: .
       dockerfile: Dockerfile.worker
     restart: unless-stopped
+    mem_limit: 768m
+    cpus: 1.0
     env_file:
       - ./.env.production
     environment:
@@ -66,6 +105,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      pgbouncer:
+        condition: service_started
       rabbitmq:
         condition: service_healthy
       redis:
@@ -76,6 +117,8 @@ services:
       context: .
       dockerfile: Dockerfile.worker
     restart: unless-stopped
+    mem_limit: 768m
+    cpus: 1.0
     env_file:
       - ./.env.production
     environment:
@@ -83,6 +126,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      pgbouncer:
+        condition: service_started
       rabbitmq:
         condition: service_healthy
       redis:
@@ -93,6 +138,8 @@ services:
       context: .
       dockerfile: Dockerfile.worker
     restart: unless-stopped
+    mem_limit: 640m
+    cpus: 1.0
     env_file:
       - ./.env.production
     environment:
@@ -100,6 +147,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      pgbouncer:
+        condition: service_started
       rabbitmq:
         condition: service_healthy
       redis:
@@ -108,12 +157,26 @@ services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
+    mem_limit: 3g
+    cpus: 2.0
     env_file:
       - ./.env.production
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-aippt}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=150"
+      - "-c"
+      - "shared_buffers=512MB"
+      - "-c"
+      - "effective_cache_size=2GB"
+      - "-c"
+      - "work_mem=8MB"
+      - "-c"
+      - "maintenance_work_mem=128MB"
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
@@ -125,8 +188,11 @@ services:
   rabbitmq:
     image: rabbitmq:3.13-management
     restart: unless-stopped
+    mem_limit: 1g
     env_file:
       - ./.env.production
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
@@ -136,7 +202,17 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes"]
+    mem_limit: 1g
+    # AOF persistence; cap memory and evict only keys that have a TTL (cache,
+    # rate-limit, breaker, semaphore) so budget counters/idempotency are kept.
+    command:
+      - "redis-server"
+      - "--appendonly"
+      - "yes"
+      - "--maxmemory"
+      - "768mb"
+      - "--maxmemory-policy"
+      - "volatile-lru"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -145,8 +221,36 @@ services:
     volumes:
       - redis_data:/data
 
+  # Nightly Postgres backup (runs on start + every 24h). Set BACKUP_REMOTE_TARGET
+  # in .env.production for offsite copies (requires an SSH key — see docs/DEPLOY.md).
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    mem_limit: 256m
+    env_file:
+      - ./.env.production
+    environment:
+      POSTGRES_HOST: postgres
+      BACKUP_LOCAL_DIR: /var/backups/aippt
+    volumes:
+      - ./scripts/backup-postgres.sh:/usr/local/bin/backup.sh:ro
+      - pg_backups:/var/backups/aippt
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        apk add --no-cache bash openssh-client >/dev/null 2>&1 || true
+        while true; do
+          bash /usr/local/bin/backup.sh || echo "[backup] run failed"
+          sleep 86400
+        done
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   pg_data:
+  pg_backups:
   redis_data:
+  rabbitmq_data:
   caddy_data:
   caddy_config:

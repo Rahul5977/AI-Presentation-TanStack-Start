@@ -14,3 +14,7 @@ todos.json
 
 /src/generated/prisma
 docs/
+
+# Phase 3 production secrets (never commit)
+.env.production
+config/prometheus/metrics_token
