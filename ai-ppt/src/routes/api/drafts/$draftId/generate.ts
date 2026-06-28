@@ -7,6 +7,7 @@ import { getRequestHeaders } from '@tanstack/react-start/server'
 
 import { auth } from '@/lib/auth'
 import { Prisma } from '@/generated/prisma/client'
+import { assertBudgetAvailable, BudgetExceededError } from '@/server/ai/runtime'
 import { logger } from '@/server/logging/logger'
 import { captureWebException } from '@/server/observability/sentry'
 import { prisma } from '@/lib/db'
@@ -90,6 +91,17 @@ export const Route = createFileRoute('/api/drafts/$draftId/generate')({
           )
         } catch (error) {
           return json({ error: quotaErrorMessage(error) }, { status: 429 })
+        }
+
+        // Spend-cap kill-switch: don't accept a whole deck's worth of expensive
+        // AI work if the global or per-user daily budget is already exhausted.
+        try {
+          await assertBudgetAvailable(session.user.id)
+        } catch (error) {
+          if (error instanceof BudgetExceededError) {
+            return json({ error: error.message }, { status: 429 })
+          }
+          throw error
         }
 
         if (
@@ -230,6 +242,7 @@ export const Route = createFileRoute('/api/drafts/$draftId/generate')({
               tone: draft.presentation.tone,
               depth: draft.presentation.depth,
               language: draft.presentation.language,
+              userId: session.user.id,
             },
           })
 
@@ -244,6 +257,7 @@ export const Route = createFileRoute('/api/drafts/$draftId/generate')({
                 attempt: 0,
                 visualConcept: draftSlide.visualConcept,
                 imageStyle,
+                userId: session.user.id,
               },
             })
           }

@@ -12,7 +12,7 @@ import { estimateCostUsd } from './pricing'
 import { getFallbackChain } from './registry'
 import { isBreakerOpen, recordBreakerFailure, recordBreakerSuccess } from './breaker'
 import { acquireSlot, releaseSlot } from './semaphore'
-import { checkBudget, recordSpend } from './budget'
+import { assertBudgetAvailable, checkBudget, recordSpend } from './budget'
 import { getCached, makeCacheKey, setCached } from './cache'
 import { callModel } from './call-model'
 
@@ -245,6 +245,14 @@ describe('budget', () => {
     const globalBlocked = await checkBudget({ userId: 'u3', globalCapUsd: 10, userCapUsd: 100 })
     expect(globalBlocked.ok).toBe(false)
     if (!globalBlocked.ok) expect(globalBlocked.scope).toBe('global')
+  })
+
+  it('assertBudgetAvailable throws once the global cap is reached', async () => {
+    process.env.GLOBAL_DAILY_USD_CAP = '5'
+    process.env.USER_DAILY_USD_CAP = '100'
+    await assertBudgetAvailable('u1') // under cap → ok
+    await recordSpend({ costUsd: 6 })
+    await expect(assertBudgetAvailable('u1')).rejects.toBeInstanceOf(BudgetExceededError)
   })
 })
 

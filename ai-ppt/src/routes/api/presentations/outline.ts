@@ -4,6 +4,7 @@ import { json } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 
 import { auth } from '@/lib/auth'
+import { assertBudgetAvailable, BudgetExceededError } from '@/server/ai/runtime'
 import { logger } from '@/server/logging/logger'
 import { captureWebException } from '@/server/observability/sentry'
 import { createDraftFromInput } from '@/server/presentations/outline-service'
@@ -67,6 +68,7 @@ export const Route = createFileRoute('/api/presentations/outline')({
             })
             await assertDeckCreationAllowed(session.user.id)
             await assertQuota(session.user.id, 'PRESENTATIONS_CREATED')
+            await assertBudgetAvailable(session.user.id)
             const draft = await createDraftFromInput(session.user.id, parsed.data)
             await recordUsage({
               userId: session.user.id,
@@ -92,6 +94,9 @@ export const Route = createFileRoute('/api/presentations/outline')({
               },
               'Outline generation failed',
             )
+            if (error instanceof BudgetExceededError) {
+              return json({ error: error.message }, { status: 429 })
+            }
             const message =
               error instanceof DeckPaymentRequiredError
                 ? deckPaymentErrorMessage(error)

@@ -1,4 +1,6 @@
+import { aiConfig } from './config'
 import { aiRedis } from './redis'
+import { BudgetExceededError } from './errors'
 import { runtimeLog } from './log'
 import type { BudgetScope } from './errors'
 
@@ -80,6 +82,22 @@ export async function recordSpend(params: { userId?: string; costUsd: number }):
     runtimeLog.warn('budget recordSpend failed', {
       err: err instanceof Error ? err.message : String(err),
     })
+  }
+}
+
+/**
+ * Enqueue-gate kill-switch: throw BudgetExceededError if the global or per-user
+ * daily cap is already reached, so we never accept expensive work that the
+ * budget won't allow. Uses the configured caps. Call before enqueuing/charging.
+ */
+export async function assertBudgetAvailable(userId?: string): Promise<void> {
+  const check = await checkBudget({
+    userId,
+    globalCapUsd: aiConfig.budget.globalDailyUsd(),
+    userCapUsd: aiConfig.budget.userDailyUsd(),
+  })
+  if (!check.ok) {
+    throw new BudgetExceededError(check.scope)
   }
 }
 

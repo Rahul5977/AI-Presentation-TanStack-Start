@@ -18,6 +18,6 @@ export {
 export type { ErrorClass, BudgetScope } from './errors'
 export type { TokenUsage } from './pricing'
 export { estimateCostUsd } from './pricing'
-export { checkBudget, recordSpend, getDailySpend } from './budget'
+export { checkBudget, recordSpend, getDailySpend, assertBudgetAvailable } from './budget'
 export { aiConfig } from './config'
 export type { CallKind } from './config'
