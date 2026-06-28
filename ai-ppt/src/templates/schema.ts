@@ -3,6 +3,10 @@ export const TEMPLATE_KINDS = [
   'BOLD_GRADIENT',
   'EDITORIAL_SERIF',
   'TECH_DARK',
+  'CORPORATE_BLUE',
+  'VIBRANT_POP',
+  'WARM_SAND',
+  'MIDNIGHT_PRO',
 ] as const
 
 export type TemplateKind = (typeof TEMPLATE_KINDS)[number]

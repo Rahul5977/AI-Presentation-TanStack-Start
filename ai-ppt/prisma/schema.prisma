@@ -62,6 +62,10 @@ enum TemplateKind {
   BOLD_GRADIENT
   EDITORIAL_SERIF
   TECH_DARK
+  CORPORATE_BLUE
+  VIBRANT_POP
+  WARM_SAND
+  MIDNIGHT_PRO
 }
 
 enum SlideStatus {

@@ -11,6 +11,10 @@ const _templateValuesCoverageCheck: AssertTemplateKindCoverage = {
   BOLD_GRADIENT: templateValues[1],
   EDITORIAL_SERIF: templateValues[2],
   TECH_DARK: templateValues[3],
+  CORPORATE_BLUE: templateValues[4],
+  VIBRANT_POP: templateValues[5],
+  WARM_SAND: templateValues[6],
+  MIDNIGHT_PRO: templateValues[7],
 }
 
 export const templateKindCoverage = _templateValuesCoverageCheck
