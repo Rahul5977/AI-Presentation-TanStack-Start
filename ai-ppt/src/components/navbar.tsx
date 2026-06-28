@@ -24,6 +24,7 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 
 const centerLinks = [
+  { to: '/pricing', label: 'Pricing' },
   { to: '/about-us', label: 'About Us' },
   { to: '/contact-us', label: 'Contact' },
   { to: '/privacy-policy', label: 'Privacy' },
@@ -154,6 +155,13 @@ export default function Navbar() {
                         <p className="truncate text-xs text-muted-foreground">{session.user.email}</p>
                       </div>
                     </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild className="cursor-pointer">
+                      <Link to="/pricing" className="inline-flex w-full items-center">
+                        <Sparkles className="mr-2 size-4 text-primary" />
+                        Billing & plan
+                      </Link>
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={handleSignOut}

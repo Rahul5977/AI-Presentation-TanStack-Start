@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsAndConditionsRouteImport } from './routes/terms-and-conditions'
 import { Route as RefundAndCancellationPolicyRouteImport } from './routes/refund-and-cancellation-policy'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
+import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as ContactUsRouteImport } from './routes/contact-us'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
@@ -86,6 +87,11 @@ const RefundAndCancellationPolicyRoute =
 const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
   id: '/privacy-policy',
   path: '/privacy-policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HomeRoute = HomeRouteImport.update({
@@ -414,6 +420,7 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AnalyticsRoute
   '/contact-us': typeof ContactUsRoute
   '/home': typeof HomeRoute
+  '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/refund-and-cancellation-policy': typeof RefundAndCancellationPolicyRoute
   '/terms-and-conditions': typeof TermsAndConditionsRoute
@@ -477,6 +484,7 @@ export interface FileRoutesByTo {
   '/analytics': typeof AnalyticsRoute
   '/contact-us': typeof ContactUsRoute
   '/home': typeof HomeRoute
+  '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/refund-and-cancellation-policy': typeof RefundAndCancellationPolicyRoute
   '/terms-and-conditions': typeof TermsAndConditionsRoute
@@ -542,6 +550,7 @@ export interface FileRoutesById {
   '/analytics': typeof AnalyticsRoute
   '/contact-us': typeof ContactUsRoute
   '/home': typeof HomeRoute
+  '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/refund-and-cancellation-policy': typeof RefundAndCancellationPolicyRoute
   '/terms-and-conditions': typeof TermsAndConditionsRoute
@@ -607,6 +616,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/contact-us'
     | '/home'
+    | '/pricing'
     | '/privacy-policy'
     | '/refund-and-cancellation-policy'
     | '/terms-and-conditions'
@@ -670,6 +680,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/contact-us'
     | '/home'
+    | '/pricing'
     | '/privacy-policy'
     | '/refund-and-cancellation-policy'
     | '/terms-and-conditions'
@@ -734,6 +745,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/contact-us'
     | '/home'
+    | '/pricing'
     | '/privacy-policy'
     | '/refund-and-cancellation-policy'
     | '/terms-and-conditions'
@@ -799,6 +811,7 @@ export interface RootRouteChildren {
   AnalyticsRoute: typeof AnalyticsRoute
   ContactUsRoute: typeof ContactUsRoute
   HomeRoute: typeof HomeRoute
+  PricingRoute: typeof PricingRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   RefundAndCancellationPolicyRoute: typeof RefundAndCancellationPolicyRoute
   TermsAndConditionsRoute: typeof TermsAndConditionsRoute
@@ -875,6 +888,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy-policy'
       fullPath: '/privacy-policy'
       preLoaderRoute: typeof PrivacyPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/home': {
@@ -1314,6 +1334,7 @@ const rootRouteChildren: RootRouteChildren = {
   AnalyticsRoute: AnalyticsRoute,
   ContactUsRoute: ContactUsRoute,
   HomeRoute: HomeRoute,
+  PricingRoute: PricingRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   RefundAndCancellationPolicyRoute: RefundAndCancellationPolicyRoute,
   TermsAndConditionsRoute: TermsAndConditionsRoute,

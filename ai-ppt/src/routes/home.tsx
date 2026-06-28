@@ -183,6 +183,7 @@ function HomePage() {
         draftId?: string
         paymentRequired?: boolean
         priceInr?: number
+        upgradeRequired?: boolean
       } = {}
       if (rawBody.trim()) {
         try {
@@ -213,8 +214,19 @@ function HomePage() {
           toast.error('Your session expired. Please sign in again.')
           return
         }
-        if (response.status === 402 || result.paymentRequired) {
-          setPaymentModal({ open: true, priceInr: result.priceInr ?? 20 })
+        if (
+          result.upgradeRequired ||
+          response.status === 402 ||
+          result.paymentRequired
+        ) {
+          toast.info('Upgrade to Pro to continue.')
+          await navigate({ to: '/pricing' })
+          return
+        }
+        if (response.status === 429) {
+          toast.error(result.error ?? 'You’ve reached your plan limit. Upgrade for more.', {
+            action: { label: 'Upgrade', onClick: () => void navigate({ to: '/pricing' }) },
+          })
           return
         }
         if (response.status === 400 && result.error === 'Invalid payload') {
