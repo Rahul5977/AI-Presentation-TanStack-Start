@@ -77,6 +77,7 @@ async function loadPresentationForExport(
 export async function exportPptx(
   userId: string,
   presentationId: string,
+  opts: { watermark?: boolean } = {},
 ): Promise<{ buffer: Buffer; filename: string } | null> {
   const data = await loadPresentationForExport(userId, presentationId)
   if (!data) return null
@@ -109,6 +110,20 @@ export async function exportPptx(
       fill: { color: accentColor },
       line: { type: 'none' },
     })
+
+    // Free-plan watermark (removed on Pro).
+    if (opts.watermark) {
+      pSlide.addText('Made with Kodexa', {
+        x: 9.6,
+        y: 7.05,
+        w: 3.2,
+        h: 0.3,
+        align: 'right',
+        fontSize: 9,
+        color: mutedColor,
+        italic: true,
+      })
+    }
 
     // Brand logo (top-right), if any
     if (logoUrl) {

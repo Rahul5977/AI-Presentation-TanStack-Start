@@ -12,6 +12,7 @@ type OutlineMessage = {
   jobId: string
   idempotencyKey: string
   attempt: number
+  tier?: 'free' | 'pro'
 }
 
 export async function startOutlineConsumer() {
@@ -68,7 +69,7 @@ export async function startOutlineConsumer() {
           imageStyle: draft.imageStyle as never,
           depth: draft.depth,
         },
-        { userId: payload.userId },
+        { userId: payload.userId, tier: payload.tier ?? 'pro' },
       )
       const outline = generation.value
 

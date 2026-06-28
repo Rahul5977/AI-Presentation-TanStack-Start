@@ -7,6 +7,7 @@ import { prisma } from '@/lib/db'
 import { BudgetExceededError, callModel, getFallbackChain } from '@/server/ai/runtime'
 import { improveSlideWithGemini } from '@/server/ai/gemini'
 import { improveSlideWithOpenAI } from '@/server/ai/openai'
+import { getUserEntitlements, planTier } from '@/server/billing/entitlements'
 import { updateSlideContent } from '@/server/presentations/slide-service'
 import {
   assertQuota,
@@ -89,12 +90,14 @@ export const Route = createFileRoute('/api/presentations/$id/slides/$slideId/cha
           language: slide.presentation.language,
         }
 
+        const tier = planTier((await getUserEntitlements(session.user.id)).plan)
+
         let result
         try {
           const generation = await callModel({
             op: 'slideChat',
             kind: 'text',
-            chain: getFallbackChain('slideChat'),
+            chain: getFallbackChain('slideChat', tier),
             userId: session.user.id,
             run: async ({ provider, model, signal }) =>
               provider === 'openai'

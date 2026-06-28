@@ -18,6 +18,7 @@ type ContentMessage = {
   language: string
   // Populated end-to-end in W4 for per-user budget attribution; optional here.
   userId?: string
+  tier?: 'free' | 'pro'
 }
 
 export async function startContentConsumer() {
@@ -71,7 +72,7 @@ export async function startContentConsumer() {
       const generation = await callModel({
         op: 'content',
         kind: 'text',
-        chain: getFallbackChain('content'),
+        chain: getFallbackChain('content', payload.tier ?? 'pro'),
         cacheInput: contentInput,
         userId: payload.userId,
         run: async ({ provider, model, signal }) =>

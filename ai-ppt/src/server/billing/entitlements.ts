@@ -66,3 +66,13 @@ export async function getUserEntitlements(
   const plan = await resolveUserPlan(userId)
   return { plan, features: getPlanFeatures(plan) }
 }
+
+/** Whether the user may use the premium Visualize feature + manual AI image
+ *  regeneration (Pro-only). */
+export async function userCanVisualize(userId: string): Promise<boolean> {
+  const { features } = await getUserEntitlements(userId)
+  return features.canVisualize
+}
+
+export const VISUALIZE_UPGRADE_MESSAGE =
+  'Visualize and AI image regeneration are a Pro feature. Upgrade to unlock them.'

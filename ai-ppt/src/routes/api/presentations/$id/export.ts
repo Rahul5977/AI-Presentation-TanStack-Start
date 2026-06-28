@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 import { auth } from '@/lib/auth'
+import { getUserEntitlements } from '@/server/billing/entitlements'
 import { exportPptx } from '@/server/presentations/export-service'
 import { captureWebException } from '@/server/observability/sentry'
 import { assertQuota, quotaErrorMessage, recordUsage } from '@/server/usage/service'
@@ -35,7 +36,10 @@ export const Route = createFileRoute('/api/presentations/$id/export')({
           }
 
           try {
-            const result = await exportPptx(session.user.id, params.id)
+            const { features } = await getUserEntitlements(session.user.id)
+            const result = await exportPptx(session.user.id, params.id, {
+              watermark: features.watermark,
+            })
             if (!result) return json({ error: 'Presentation not found' }, { status: 404 })
 
             await recordUsage({

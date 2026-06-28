@@ -7,11 +7,6 @@ import { getRequestHeaders } from '@tanstack/react-start/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { languageOptions, templateValues } from '@/lib/presentation-options'
-import {
-  assertDeckCreationAllowed,
-  DeckPaymentRequiredError,
-  deckPaymentErrorMessage,
-} from '@/server/billing/deck-access'
 
 const createPresentationSchema = z.object({
   prompt: z.string().min(8),
@@ -79,7 +74,6 @@ export const Route = createFileRoute('/api/presentations/')({
           'Untitled presentation'
 
         try {
-          await assertDeckCreationAllowed(session.user.id)
           const presentation = await prisma.presentation.create({
             data: {
               userId: session.user.id,
@@ -108,16 +102,6 @@ export const Route = createFileRoute('/api/presentations/')({
             status: presentation.status,
           })
         } catch (err) {
-          if (err instanceof DeckPaymentRequiredError) {
-            return json(
-              {
-                error: deckPaymentErrorMessage(err),
-                paymentRequired: true,
-                priceInr: err.priceInr,
-              },
-              { status: 402 },
-            )
-          }
           const message =
             err instanceof Error ? err.message : 'Database error while saving draft.'
           return json({ error: message }, { status: 503 })

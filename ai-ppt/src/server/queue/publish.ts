@@ -11,6 +11,7 @@ type BaseJobMessage = {
 export type OutlineJobMessage = BaseJobMessage & {
   draftId: string
   userId: string
+  tier?: 'free' | 'pro'
 }
 
 export type SlideContentJobMessage = BaseJobMessage & {
@@ -20,6 +21,7 @@ export type SlideContentJobMessage = BaseJobMessage & {
   depth: string
   language: string
   userId?: string
+  tier?: 'free' | 'pro'
 }
 
 export type SlideImageJobMessage = BaseJobMessage & {

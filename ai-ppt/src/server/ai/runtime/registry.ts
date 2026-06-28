@@ -13,13 +13,17 @@
 export type TextProvider = 'openai' | 'gemini'
 export type ImageProvider = 'openai' | 'imagen'
 export type AiOp = 'outline' | 'content' | 'visualize' | 'textAction' | 'slideChat' | 'image'
+/** Plan tier — controls which text model is used (free = cheaper/faster). */
+export type ModelTier = 'free' | 'pro'
 
 export type ProviderAttempt = { provider: string; model: string }
 
-export function textModel(provider: TextProvider): string {
+export function textModel(provider: TextProvider, tier: ModelTier = 'pro'): string {
   if (provider === 'openai') {
+    if (tier === 'free') return process.env.OPENAI_FREE_MODEL ?? 'gpt-4o-mini'
     return process.env.OPENAI_TEXT_MODEL ?? process.env.OPENAI_SLIDE_MODEL ?? 'gpt-4.1-mini'
   }
+  if (tier === 'free') return process.env.GEMINI_FREE_MODEL ?? 'gemini-2.5-flash'
   return process.env.GEMINI_MODEL ?? 'gemini-2.5-pro'
 }
 
@@ -55,10 +59,10 @@ function resolveImageProvider(envNames: string[], fallback: ImageProvider): Imag
   return fallback
 }
 
-function textChain(primary: TextProvider): ProviderAttempt[] {
+function textChain(primary: TextProvider, tier: ModelTier): ProviderAttempt[] {
   const secondary: TextProvider = primary === 'openai' ? 'gemini' : 'openai'
-  const chain: ProviderAttempt[] = [{ provider: primary, model: textModel(primary) }]
-  if (fallbackEnabled()) chain.push({ provider: secondary, model: textModel(secondary) })
+  const chain: ProviderAttempt[] = [{ provider: primary, model: textModel(primary, tier) }]
+  if (fallbackEnabled()) chain.push({ provider: secondary, model: textModel(secondary, tier) })
   return chain
 }
 
@@ -69,19 +73,20 @@ function imageChain(primary: ImageProvider): ProviderAttempt[] {
   return chain
 }
 
-/** Resolve the ordered provider/model attempt chain for an operation. */
-export function getFallbackChain(op: AiOp): ProviderAttempt[] {
+/** Resolve the ordered provider/model attempt chain for an operation. `tier`
+ *  selects the text model (free = cheaper/faster); ignored for image ops. */
+export function getFallbackChain(op: AiOp, tier: ModelTier = 'pro'): ProviderAttempt[] {
   switch (op) {
     case 'outline':
-      return textChain(resolveTextProvider(['OUTLINE_PROVIDER', 'TEXT_PROVIDER', 'AI_PROVIDER'], 'openai'))
+      return textChain(resolveTextProvider(['OUTLINE_PROVIDER', 'TEXT_PROVIDER', 'AI_PROVIDER'], 'openai'), tier)
     case 'content':
-      return textChain(resolveTextProvider(['CONTENT_PROVIDER', 'TEXT_PROVIDER', 'AI_PROVIDER'], 'gemini'))
+      return textChain(resolveTextProvider(['CONTENT_PROVIDER', 'TEXT_PROVIDER', 'AI_PROVIDER'], 'gemini'), tier)
     case 'visualize':
     case 'textAction':
-      return textChain(resolveTextProvider(['OUTLINE_PROVIDER', 'TEXT_PROVIDER', 'AI_PROVIDER'], 'openai'))
+      return textChain(resolveTextProvider(['OUTLINE_PROVIDER', 'TEXT_PROVIDER', 'AI_PROVIDER'], 'openai'), tier)
     case 'slideChat':
       // Previously hardcoded to Gemini; now gets an OpenAI fallback.
-      return textChain(resolveTextProvider(['SLIDE_CHAT_PROVIDER', 'TEXT_PROVIDER', 'AI_PROVIDER'], 'gemini'))
+      return textChain(resolveTextProvider(['SLIDE_CHAT_PROVIDER', 'TEXT_PROVIDER', 'AI_PROVIDER'], 'gemini'), tier)
     case 'image':
       return imageChain(resolveImageProvider(['IMAGE_PROVIDER', 'AI_PROVIDER'], 'imagen'))
   }

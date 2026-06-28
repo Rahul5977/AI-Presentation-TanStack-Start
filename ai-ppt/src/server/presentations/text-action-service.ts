@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db'
 import { callModel, getFallbackChain } from '@/server/ai/runtime'
 import { applyTextActionWithGemini } from '@/server/ai/gemini'
 import { applyTextActionWithOpenAI } from '@/server/ai/openai'
+import { getUserEntitlements, planTier } from '@/server/billing/entitlements'
 import type { TextTransformAction } from '@/generated/prisma/client'
 
 export type TextActionResult =
@@ -33,13 +34,14 @@ export async function applySlideTextAction(
 
   const context = `Slide title: ${slide.title}. Purpose: ${slide.intent}`
   const actionInput = { action, bullets, context }
+  const tier = userId ? planTier((await getUserEntitlements(userId)).plan) : 'pro'
 
   let next: string[]
   try {
     const generation = await callModel<string[]>({
       op: 'textAction',
       kind: 'text',
-      chain: getFallbackChain('textAction'),
+      chain: getFallbackChain('textAction', tier),
       userId,
       cacheInput: actionInput,
       run: async ({ provider, model, signal }) =>

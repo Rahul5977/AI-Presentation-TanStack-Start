@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db'
 import { runOutlineModel } from '@/server/ai/outline-runner'
+import { getUserEntitlements, planTier } from '@/server/billing/entitlements'
 import { publishOutlineJob } from '@/server/queue/publish'
 import type { PresentationInput } from '@/server/presentations/schemas'
 
@@ -94,6 +95,8 @@ export async function createDraftFromInput(
   }
 
   const draftId = created.draft.id
+  const { plan } = await getUserEntitlements(userId)
+  const tier = planTier(plan)
   const idempotencyKey = `outline:${draftId}:v1`
   const job = await prisma.generationJob.create({
     data: {
@@ -110,6 +113,7 @@ export async function createDraftFromInput(
     presentationId: created.id,
     draftId,
     userId,
+    tier,
     jobId: job.id,
     idempotencyKey,
     attempt: 0,
@@ -216,7 +220,7 @@ export async function regenerateDraftOutline(
       imageStyle: draft.imageStyle as never,
       depth: draft.depth,
     },
-    { userId },
+    { userId, tier: planTier((await getUserEntitlements(userId)).plan) },
   )
   const outline = generated.value
 

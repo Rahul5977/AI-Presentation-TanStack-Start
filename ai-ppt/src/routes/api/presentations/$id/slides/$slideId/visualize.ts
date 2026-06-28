@@ -4,6 +4,7 @@ import { getRequestHeaders } from '@tanstack/react-start/server'
 import { z } from 'zod'
 
 import { auth } from '@/lib/auth'
+import { userCanVisualize, VISUALIZE_UPGRADE_MESSAGE } from '@/server/billing/entitlements'
 import { canAccessPresentation } from '@/server/presentations/access'
 import { setSlideData, visualizeSlide } from '@/server/presentations/visualize-service'
 import { SLIDE_DATA_KINDS, slideDataSchema } from '@/lib/slide-data'
@@ -29,6 +30,10 @@ export const Route = createFileRoute(
 
         const canEdit = await canAccessPresentation(session.user.id, params.id, 'edit')
         if (!canEdit) return json({ error: 'Presentation not found' }, { status: 404 })
+
+        if (!(await userCanVisualize(session.user.id))) {
+          return json({ error: VISUALIZE_UPGRADE_MESSAGE, upgradeRequired: true }, { status: 403 })
+        }
 
         const parsed = visualizeSchema.safeParse(await request.json().catch(() => ({})))
         const kind = parsed.success ? parsed.data.kind : 'auto'

@@ -1,4 +1,5 @@
 import { callModel, getFallbackChain } from '@/server/ai/runtime'
+import type { ModelTier } from '@/server/ai/runtime'
 import { generateOutlineWithGemini } from '@/server/ai/gemini'
 import { generateOutlineWithOpenAI } from '@/server/ai/openai'
 import type { OutlineGeneration, PresentationInput } from '@/server/presentations/schemas'
@@ -12,12 +13,12 @@ export type GeneratedOutline = OutlineGeneration
  */
 export async function runOutlineModel(
   input: PresentationInput,
-  opts: { userId?: string } = {},
+  opts: { userId?: string; tier?: ModelTier } = {},
 ) {
   return await callModel<GeneratedOutline>({
     op: 'outline',
     kind: 'text',
-    chain: getFallbackChain('outline'),
+    chain: getFallbackChain('outline', opts.tier ?? 'pro'),
     userId: opts.userId,
     cacheInput: input,
     run: async ({ provider, model, signal }) => {

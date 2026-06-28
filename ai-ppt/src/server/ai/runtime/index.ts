@@ -7,7 +7,7 @@
 export { callModel } from './call-model'
 export type { CallModelOptions, CallModelResult, ModelRunResult } from './call-model'
 export { getFallbackChain, textModel, imageModel } from './registry'
-export type { AiOp, ProviderAttempt, TextProvider, ImageProvider } from './registry'
+export type { AiOp, ProviderAttempt, TextProvider, ImageProvider, ModelTier } from './registry'
 export {
   classifyError,
   TimeoutError,

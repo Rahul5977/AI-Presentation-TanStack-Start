@@ -8,6 +8,7 @@ import { getRequestHeaders } from '@tanstack/react-start/server'
 import { auth } from '@/lib/auth'
 import { Prisma } from '@/generated/prisma/client'
 import { assertBudgetAvailable, BudgetExceededError } from '@/server/ai/runtime'
+import { getUserEntitlements, planTier } from '@/server/billing/entitlements'
 import { logger } from '@/server/logging/logger'
 import { captureWebException } from '@/server/observability/sentry'
 import { prisma } from '@/lib/db'
@@ -82,6 +83,20 @@ export const Route = createFileRoute('/api/drafts/$draftId/generate')({
 
         if (draft.slides.length === 0) {
           return json({ error: 'Draft has no slides to generate.' }, { status: 400 })
+        }
+
+        const { plan, features } = await getUserEntitlements(session.user.id)
+        const tier = planTier(plan)
+
+        // Free plan deck length cap.
+        if (draft.slides.length > features.maxSlides) {
+          return json(
+            {
+              error: `Free decks are limited to ${features.maxSlides} slides. Upgrade to Pro for longer decks.`,
+              upgradeRequired: true,
+            },
+            { status: 403 },
+          )
         }
 
         try {
@@ -244,6 +259,7 @@ export const Route = createFileRoute('/api/drafts/$draftId/generate')({
               depth: draft.presentation.depth,
               language: draft.presentation.language,
               userId: session.user.id,
+              tier,
             },
           })
 
