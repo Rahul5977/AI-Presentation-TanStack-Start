@@ -33,6 +33,29 @@ import {
 } from 'lucide-react'
 import { useCallback, useRef, useState } from 'react'
 
+const EXAMPLE_PROMPTS = [
+  {
+    label: 'Startup pitch deck',
+    prompt:
+      'Create a 10-slide investor pitch deck for a B2B SaaS startup, covering problem, solution, market size, business model, traction, and the ask.',
+  },
+  {
+    label: 'Product launch',
+    prompt:
+      'Build a product launch presentation for a new AI note-taking app — key features, target users, differentiation, pricing, and go-to-market plan.',
+  },
+  {
+    label: 'Quarterly review',
+    prompt:
+      'Make a quarterly business review deck with goals vs results, key metrics, wins, challenges, and next-quarter priorities for a product team.',
+  },
+  {
+    label: 'Lecture / course',
+    prompt:
+      'Create an educational presentation introducing the fundamentals of machine learning for undergraduate students, with clear examples and a recap.',
+  },
+] as const
+
 export type PresentationFormValues = {
   prompt: string
   audience: AudienceValue
@@ -174,6 +197,24 @@ export default function PromptComposer({
               </span>
             ) : null}
           </div>
+          {trimmedPromptLength === 0 ? (
+            <div className="mt-2.5 flex flex-wrap items-center gap-2">
+              <span className="text-xs text-muted-foreground">Try an example:</span>
+              {EXAMPLE_PROMPTS.map((ex) => (
+                <button
+                  key={ex.label}
+                  type="button"
+                  onClick={() => {
+                    update('prompt', ex.prompt)
+                    autosizePrompt()
+                  }}
+                  className="rounded-full border border-border/60 bg-background/60 px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                >
+                  {ex.label}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <div className="space-y-3 rounded-2xl border border-border/70 bg-muted/15 p-5">

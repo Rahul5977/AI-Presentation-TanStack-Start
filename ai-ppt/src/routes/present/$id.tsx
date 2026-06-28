@@ -7,7 +7,7 @@ import type { TemplateKind } from '@/templates/schema'
 import SlideRenderer from '@/components/slides/SlideRenderer'
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
-import { X, ChevronLeft, ChevronRight, Monitor } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, Monitor, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type PresentSlide = {
@@ -53,6 +53,16 @@ function PresentModePage() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [showNotes, setShowNotes] = useState(false)
   const [, setIsFullscreen] = useState(false)
+  const [elapsedSec, setElapsedSec] = useState(0)
+
+  // Presentation timer — ticks while the present view is open.
+  useEffect(() => {
+    const t = setInterval(() => setElapsedSec((s) => s + 1), 1000)
+    return () => clearInterval(t)
+  }, [])
+  const elapsedLabel = `${String(Math.floor(elapsedSec / 60)).padStart(2, '0')}:${String(
+    elapsedSec % 60,
+  ).padStart(2, '0')}`
 
   useEffect(() => {
     const load = async () => {
@@ -151,10 +161,22 @@ function PresentModePage() {
       className="flex min-h-screen flex-col bg-black"
       style={{ userSelect: 'none' }}
     >
+      {/* ── Progress bar ────────────────────────────────────────────────── */}
+      <div className="h-0.5 w-full bg-white/10">
+        <div
+          className="h-full bg-white/70 transition-all duration-300"
+          style={{ width: `${totalSlides ? ((currentIndex + 1) / totalSlides) * 100 : 0}%` }}
+        />
+      </div>
+
       {/* ── Top bar ─────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between px-4 py-2 text-xs text-white/40">
         <span className="truncate font-medium text-white/60">{presentation.title}</span>
         <div className="flex items-center gap-3">
+          <span className="flex items-center gap-1 tabular-nums" title="Elapsed time">
+            <Clock size={12} />
+            {elapsedLabel}
+          </span>
           <button
             type="button"
             onClick={() => setShowNotes((p) => !p)}

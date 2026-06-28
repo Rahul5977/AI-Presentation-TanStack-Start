@@ -295,6 +295,7 @@ function HomePage() {
         >
           <PresentationHistorySidebar
             items={isHistoryLoading ? [] : history}
+            isLoading={isHistoryLoading}
             onNewPresentation={() => {
               setFormValues(defaultFormValues)
               setSourceValues(defaultSourceValues)

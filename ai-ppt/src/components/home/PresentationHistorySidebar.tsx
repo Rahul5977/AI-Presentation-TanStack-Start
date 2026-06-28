@@ -14,6 +14,7 @@ type PresentationHistorySidebarProps = {
   items: PresentationHistoryItem[]
   onNewPresentation: () => void
   onOpenPresentation: (presentationId: string) => void
+  isLoading?: boolean
 }
 
 const statusClasses: Record<PresentationHistoryItem['status'], string> = {
@@ -42,6 +43,7 @@ export default function PresentationHistorySidebar({
   items,
   onNewPresentation,
   onOpenPresentation,
+  isLoading = false,
 }: PresentationHistorySidebarProps) {
   const readyCount = items.filter((item) => item.status === 'READY').length
 
@@ -76,7 +78,17 @@ export default function PresentationHistorySidebar({
 
       <div className="max-h-[60vh] space-y-2.5 overflow-y-auto p-4">
         <AnimatePresence mode="popLayout">
-          {items.length === 0 ? (
+          {isLoading ? (
+            <div key="loading" className="space-y-2.5">
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="h-16 animate-pulse rounded-2xl border border-border/50 bg-muted/50"
+                  style={{ animationDelay: `${i * 120}ms` }}
+                />
+              ))}
+            </div>
+          ) : items.length === 0 ? (
             <motion.div
               key="empty-state"
               initial={{ opacity: 0, y: 6 }}
