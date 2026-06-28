@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db'
-import { generateOutlineWithGemini } from '@/server/ai/gemini'
-import { generateOutlineWithOpenAI } from '@/server/ai/openai'
+import { runOutlineModel } from '@/server/ai/outline-runner'
+import { publishOutlineJob } from '@/server/queue/publish'
 import type { PresentationInput } from '@/server/presentations/schemas'
 
 type DraftSlideRecord = {
@@ -13,30 +13,18 @@ type DraftSlideRecord = {
   speakerNotesHint: string | null
 }
 
-type OutlineProvider = 'gemini' | 'openai'
-
-function resolveOutlineProvider(): OutlineProvider {
-  const raw =
-    process.env.OUTLINE_PROVIDER ??
-    process.env.TEXT_PROVIDER ??
-    process.env.AI_PROVIDER ??
-    'openai'
-  return raw.toLowerCase() === 'openai' ? 'openai' : 'gemini'
-}
-
-async function generateOutline(input: PresentationInput) {
-  const provider = resolveOutlineProvider()
-  if (provider === 'openai') {
-    return await generateOutlineWithOpenAI(input)
-  }
-  return await generateOutlineWithGemini(input)
-}
+export type DraftStatusValue =
+  | 'OUTLINE_PENDING'
+  | 'OUTLINE_GENERATING'
+  | 'OUTLINE_READY'
+  | 'OUTLINE_FAILED'
 
 export type DraftWithSlides = {
   draftId: string
   presentationId: string
   title: string
   prompt: string
+  status: DraftStatusValue
   slides: DraftSlideRecord[]
   updatedAt: string
 }
@@ -46,16 +34,26 @@ function normalizeBullets(value: unknown): string[] {
   return value.filter((item): item is string => typeof item === 'string')
 }
 
+function derivePlaceholderTitle(prompt: string): string {
+  const trimmed = prompt.trim().replace(/\s+/g, ' ')
+  if (!trimmed) return 'Untitled presentation'
+  return trimmed.length > 70 ? `${trimmed.slice(0, 67)}…` : trimmed
+}
+
+/**
+ * Create a presentation + draft in the OUTLINE_PENDING state (no slides yet) and
+ * enqueue an OUTLINE_GENERATE job, returning immediately. The outline worker
+ * fills in the slides and flips the draft to OUTLINE_READY; the client watches
+ * progress over SSE at /api/drafts/:draftId/events.
+ */
 export async function createDraftFromInput(
   userId: string,
   input: PresentationInput,
 ): Promise<DraftWithSlides> {
-  const outline = await generateOutline(input)
-
   const created = await prisma.presentation.create({
     data: {
       userId,
-      title: outline.title,
+      title: derivePlaceholderTitle(input.prompt),
       prompt: input.prompt,
       status: 'DRAFT',
       audience: input.audience,
@@ -79,16 +77,7 @@ export async function createDraftFromInput(
           template: input.template,
           imageStyle: input.imageStyle,
           depth: input.depth,
-          slides: {
-            create: outline.slides.map((slide, index) => ({
-              position: index,
-              title: slide.title,
-              intent: slide.intent,
-              bullets: slide.bullets,
-              visualConcept: slide.visualConcept,
-              speakerNotesHint: slide.speakerNotesHint,
-            })),
-          },
+          status: 'OUTLINE_PENDING',
         },
       },
     },
@@ -96,24 +85,7 @@ export async function createDraftFromInput(
       id: true,
       title: true,
       prompt: true,
-      draft: {
-        select: {
-          id: true,
-          updatedAt: true,
-          slides: {
-            orderBy: [{ position: 'asc' }],
-            select: {
-              id: true,
-              position: true,
-              title: true,
-              intent: true,
-              bullets: true,
-              visualConcept: true,
-              speakerNotesHint: true,
-            },
-          },
-        },
-      },
+      draft: { select: { id: true, updatedAt: true, status: true } },
     },
   })
 
@@ -121,15 +93,35 @@ export async function createDraftFromInput(
     throw new Error('Draft creation failed.')
   }
 
+  const draftId = created.draft.id
+  const idempotencyKey = `outline:${draftId}:v1`
+  const job = await prisma.generationJob.create({
+    data: {
+      presentationId: created.id,
+      type: 'OUTLINE_GENERATE',
+      status: 'PENDING',
+      idempotencyKey,
+      payload: { draftId, presentationId: created.id, userId },
+    },
+    select: { id: true },
+  })
+
+  await publishOutlineJob({
+    presentationId: created.id,
+    draftId,
+    userId,
+    jobId: job.id,
+    idempotencyKey,
+    attempt: 0,
+  })
+
   return {
-    draftId: created.draft.id,
+    draftId,
     presentationId: created.id,
     title: created.title,
     prompt: created.prompt,
-    slides: created.draft.slides.map((slide) => ({
-      ...slide,
-      bullets: normalizeBullets(slide.bullets),
-    })),
+    status: created.draft.status,
+    slides: [],
     updatedAt: created.draft.updatedAt.toISOString(),
   }
 }
@@ -148,6 +140,7 @@ export async function getDraftForUser(
     select: {
       id: true,
       prompt: true,
+      status: true,
       updatedAt: true,
       presentationId: true,
       presentation: {
@@ -177,6 +170,7 @@ export async function getDraftForUser(
     presentationId: draft.presentationId,
     title: draft.presentation.title,
     prompt: draft.prompt,
+    status: draft.status,
     slides: draft.slides.map((slide) => ({
       ...slide,
       bullets: normalizeBullets(slide.bullets),
@@ -209,18 +203,22 @@ export async function regenerateDraftOutline(
     throw new Error('Draft not found.')
   }
 
-  const outline = await generateOutline({
-    prompt: draft.prompt,
-    audience: draft.audience,
-    audienceCustom: draft.audienceCustom ?? undefined,
-    tone: draft.tone,
-    lengthPreset: draft.lengthPreset,
-    customSlideCount: draft.customSlideCount ?? undefined,
-    language: draft.language as any,
-    template: draft.template,
-    imageStyle: draft.imageStyle,
-    depth: draft.depth,
-  })
+  const generated = await runOutlineModel(
+    {
+      prompt: draft.prompt,
+      audience: draft.audience,
+      audienceCustom: draft.audienceCustom ?? undefined,
+      tone: draft.tone,
+      lengthPreset: draft.lengthPreset,
+      customSlideCount: draft.customSlideCount ?? undefined,
+      language: draft.language as never,
+      template: draft.template,
+      imageStyle: draft.imageStyle as never,
+      depth: draft.depth,
+    },
+    { userId },
+  )
+  const outline = generated.value
 
   await prisma.$transaction([
     prisma.draftSlide.deleteMany({
@@ -229,6 +227,8 @@ export async function regenerateDraftOutline(
     prisma.draft.update({
       where: { id: draftId },
       data: {
+        status: 'OUTLINE_READY',
+        lastError: null,
         slides: {
           create: outline.slides.map((slide, index) => ({
             position: index,

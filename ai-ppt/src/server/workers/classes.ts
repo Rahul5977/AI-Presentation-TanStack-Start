@@ -1,4 +1,4 @@
-export const WORKER_CLASSES = ['content', 'image', 'upload', 'finalize'] as const
+export const WORKER_CLASSES = ['outline', 'content', 'image', 'upload', 'finalize'] as const
 
 export type WorkerClass = (typeof WORKER_CLASSES)[number]
 

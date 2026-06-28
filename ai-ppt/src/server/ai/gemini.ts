@@ -1,11 +1,13 @@
 import { GoogleGenAI, Type } from '@google/genai'
+import { ModelOutputError } from '@/server/ai/runtime'
+import type { TokenUsage } from '@/server/ai/runtime'
 import { outlineGenerationSchema, resolveSlideCount } from '@/server/presentations/schemas'
 import { VISUALIZE_SYSTEM_INSTRUCTION } from '@/server/ai/visualize-prompt'
 import { buildOutlineSystemInstruction } from '@/server/ai/outline-prompt'
 import { buildTextActionSystemInstruction } from '@/server/ai/text-action-prompt'
 import type { SlideVisualInput } from '@/server/ai/visualize-prompt'
 import type { TextActionInput } from '@/server/ai/text-action-prompt'
-import type { PresentationInput } from '@/server/presentations/schemas'
+import type { OutlineGeneration, PresentationInput } from '@/server/presentations/schemas'
 
 let client: GoogleGenAI | null = null
 
@@ -19,19 +21,23 @@ function getClient(): GoogleGenAI {
 
 const textModel = () => process.env.GEMINI_MODEL ?? 'gemini-2.5-pro'
 
+export type OutlineValue = OutlineGeneration
+
 export async function generateOutlineWithGemini(
   input: PresentationInput,
-): Promise<{ title: string; slides: typeof outlineGenerationSchema._type['slides'] }> {
+  opts: { model?: string; signal?: AbortSignal } = {},
+): Promise<{ value: OutlineValue; usage: TokenUsage }> {
   const ai = getClient()
   const targetSlides = resolveSlideCount(input)
 
   const systemInstruction = buildOutlineSystemInstruction(input, targetSlides)
 
   const response = await ai.models.generateContent({
-    model: textModel(),
+    model: opts.model ?? textModel(),
     contents: JSON.stringify({ ...input, targetSlides }),
     config: {
       systemInstruction,
+      abortSignal: opts.signal,
       responseMimeType: 'application/json',
       responseSchema: {
         type: Type.OBJECT,
@@ -61,9 +67,15 @@ export async function generateOutlineWithGemini(
   if (!text) throw new Error('Gemini returned empty outline.')
 
   const parsed = outlineGenerationSchema.safeParse(JSON.parse(text))
-  if (!parsed.success) throw new Error('Gemini returned invalid outline structure.')
+  if (!parsed.success) throw new ModelOutputError('Gemini returned invalid outline structure.')
 
-  return parsed.data
+  return {
+    value: parsed.data,
+    usage: {
+      inputTokens: response.usageMetadata?.promptTokenCount,
+      outputTokens: response.usageMetadata?.candidatesTokenCount,
+    },
+  }
 }
 
 export type SlideAssistantInput = {

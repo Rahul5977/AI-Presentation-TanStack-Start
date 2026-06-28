@@ -1,3 +1,4 @@
+import { callModel, getFallbackChain } from '../../../src/server/ai/runtime'
 import { QUEUE_NAMES } from '../../../src/server/queue/queues'
 import { consumeJsonQueue } from '../lib/rabbit'
 import { generateSlideContent as generateSlideContentWithGemini } from '../lib/gemini'
@@ -15,33 +16,8 @@ type ContentMessage = {
   tone: string
   depth: string
   language: string
-}
-
-type ContentProvider = 'gemini' | 'openai'
-
-function resolveContentProvider(): ContentProvider {
-  const raw =
-    process.env.CONTENT_PROVIDER ??
-    process.env.TEXT_PROVIDER ??
-    process.env.AI_PROVIDER ??
-    'gemini'
-  return raw.toLowerCase() === 'openai' ? 'openai' : 'gemini'
-}
-
-async function generateSlideContent(input: {
-  prompt: string
-  language: string
-  tone: string
-  depth: string
-  title: string
-  intent: string
-  bullets: string[]
-  visualConcept: string
-}) {
-  if (resolveContentProvider() === 'openai') {
-    return await generateSlideContentWithOpenAI(input)
-  }
-  return await generateSlideContentWithGemini(input)
+  // Populated end-to-end in W4 for per-user budget attribution; optional here.
+  userId?: string
 }
 
 export async function startContentConsumer() {
@@ -81,7 +57,7 @@ export async function startContentConsumer() {
         throw new Error('Slide not found for content generation.')
       }
 
-      const generated = await generateSlideContent({
+      const contentInput = {
         prompt: payload.prompt,
         language: payload.language,
         tone: payload.tone,
@@ -90,7 +66,20 @@ export async function startContentConsumer() {
         intent: slide.intent,
         bullets: Array.isArray(slide.bullets) ? (slide.bullets as string[]) : [],
         visualConcept: slide.visualConcept,
+      }
+
+      const generation = await callModel({
+        op: 'content',
+        kind: 'text',
+        chain: getFallbackChain('content'),
+        cacheInput: contentInput,
+        userId: payload.userId,
+        run: async ({ provider, model, signal }) =>
+          provider === 'openai'
+            ? await generateSlideContentWithOpenAI(contentInput, { model, signal })
+            : await generateSlideContentWithGemini(contentInput, { model, signal }),
       })
+      const generated = generation.value
 
       const hasImageAlready = Boolean(slide.imageUrl || slide.imageAssetId)
       const nextStatus = hasImageAlready ? 'READY' : 'CONTENT_READY'
@@ -115,6 +104,11 @@ export async function startContentConsumer() {
           data: {
             status: 'SUCCEEDED',
             completedAt: new Date(),
+            provider: generation.provider,
+            model: generation.model,
+            inputTokens: generation.usage.inputTokens ?? null,
+            outputTokens: generation.usage.outputTokens ?? null,
+            estCostUsd: generation.estCostUsd,
           },
         }),
       ])

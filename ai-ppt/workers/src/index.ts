@@ -1,6 +1,7 @@
 import { startContentConsumer } from './consumers/content-consumer'
 import { startFinalizeConsumer } from './consumers/finalize-consumer'
 import { startImageConsumer } from './consumers/image-consumer'
+import { startOutlineConsumer } from './consumers/outline-consumer'
 import { startUploadConsumer } from './consumers/upload-consumer'
 import {
   WORKER_CLASSES,
@@ -47,6 +48,7 @@ async function start() {
   logger.info({ classes }, 'Starting worker consumers')
 
   const starters: Record<WorkerClass, () => Promise<void>> = {
+    outline: startOutlineConsumer,
     content: startContentConsumer,
     image: startImageConsumer,
     upload: startUploadConsumer,

@@ -53,6 +53,7 @@ import { Route as ApiPresentationsIdBrandKitRouteImport } from './routes/api/pre
 import { Route as ApiHealthWorkersWorkerClassRouteImport } from './routes/api/health/workers/$workerClass'
 import { Route as ApiDraftsDraftIdRegenerateRouteImport } from './routes/api/drafts/$draftId/regenerate'
 import { Route as ApiDraftsDraftIdGenerateRouteImport } from './routes/api/drafts/$draftId/generate'
+import { Route as ApiDraftsDraftIdEventsRouteImport } from './routes/api/drafts/$draftId/events'
 import { Route as ApiPresentationsIdVersionsIndexRouteImport } from './routes/api/presentations/$id/versions/index'
 import { Route as ApiPresentationsIdSlidesIndexRouteImport } from './routes/api/presentations/$id/slides/index'
 import { Route as ApiDraftsDraftIdSlidesIndexRouteImport } from './routes/api/drafts/$draftId/slides/index'
@@ -297,6 +298,11 @@ const ApiDraftsDraftIdGenerateRoute =
     path: '/api/drafts/$draftId/generate',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiDraftsDraftIdEventsRoute = ApiDraftsDraftIdEventsRouteImport.update({
+  id: '/api/drafts/$draftId/events',
+  path: '/api/drafts/$draftId/events',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPresentationsIdVersionsIndexRoute =
   ApiPresentationsIdVersionsIndexRouteImport.update({
     id: '/api/presentations/$id/versions/',
@@ -406,6 +412,7 @@ export interface FileRoutesByFullPath {
   '/api/share/$token': typeof ApiShareTokenRoute
   '/api/brand-kits/': typeof ApiBrandKitsIndexRoute
   '/api/presentations/': typeof ApiPresentationsIndexRoute
+  '/api/drafts/$draftId/events': typeof ApiDraftsDraftIdEventsRoute
   '/api/drafts/$draftId/generate': typeof ApiDraftsDraftIdGenerateRoute
   '/api/drafts/$draftId/regenerate': typeof ApiDraftsDraftIdRegenerateRoute
   '/api/health/workers/$workerClass': typeof ApiHealthWorkersWorkerClassRoute
@@ -464,6 +471,7 @@ export interface FileRoutesByTo {
   '/api/share/$token': typeof ApiShareTokenRoute
   '/api/brand-kits': typeof ApiBrandKitsIndexRoute
   '/api/presentations': typeof ApiPresentationsIndexRoute
+  '/api/drafts/$draftId/events': typeof ApiDraftsDraftIdEventsRoute
   '/api/drafts/$draftId/generate': typeof ApiDraftsDraftIdGenerateRoute
   '/api/drafts/$draftId/regenerate': typeof ApiDraftsDraftIdRegenerateRoute
   '/api/health/workers/$workerClass': typeof ApiHealthWorkersWorkerClassRoute
@@ -524,6 +532,7 @@ export interface FileRoutesById {
   '/api/share/$token': typeof ApiShareTokenRoute
   '/api/brand-kits/': typeof ApiBrandKitsIndexRoute
   '/api/presentations/': typeof ApiPresentationsIndexRoute
+  '/api/drafts/$draftId/events': typeof ApiDraftsDraftIdEventsRoute
   '/api/drafts/$draftId/generate': typeof ApiDraftsDraftIdGenerateRoute
   '/api/drafts/$draftId/regenerate': typeof ApiDraftsDraftIdRegenerateRoute
   '/api/health/workers/$workerClass': typeof ApiHealthWorkersWorkerClassRoute
@@ -584,6 +593,7 @@ export interface FileRouteTypes {
     | '/api/share/$token'
     | '/api/brand-kits/'
     | '/api/presentations/'
+    | '/api/drafts/$draftId/events'
     | '/api/drafts/$draftId/generate'
     | '/api/drafts/$draftId/regenerate'
     | '/api/health/workers/$workerClass'
@@ -642,6 +652,7 @@ export interface FileRouteTypes {
     | '/api/share/$token'
     | '/api/brand-kits'
     | '/api/presentations'
+    | '/api/drafts/$draftId/events'
     | '/api/drafts/$draftId/generate'
     | '/api/drafts/$draftId/regenerate'
     | '/api/health/workers/$workerClass'
@@ -701,6 +712,7 @@ export interface FileRouteTypes {
     | '/api/share/$token'
     | '/api/brand-kits/'
     | '/api/presentations/'
+    | '/api/drafts/$draftId/events'
     | '/api/drafts/$draftId/generate'
     | '/api/drafts/$draftId/regenerate'
     | '/api/health/workers/$workerClass'
@@ -760,6 +772,7 @@ export interface RootRouteChildren {
   ApiShareTokenRoute: typeof ApiShareTokenRoute
   ApiBrandKitsIndexRoute: typeof ApiBrandKitsIndexRoute
   ApiPresentationsIndexRoute: typeof ApiPresentationsIndexRoute
+  ApiDraftsDraftIdEventsRoute: typeof ApiDraftsDraftIdEventsRoute
   ApiDraftsDraftIdGenerateRoute: typeof ApiDraftsDraftIdGenerateRoute
   ApiDraftsDraftIdRegenerateRoute: typeof ApiDraftsDraftIdRegenerateRoute
   ApiHealthWorkersWorkerClassRoute: typeof ApiHealthWorkersWorkerClassRoute
@@ -1099,6 +1112,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiDraftsDraftIdGenerateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/drafts/$draftId/events': {
+      id: '/api/drafts/$draftId/events'
+      path: '/api/drafts/$draftId/events'
+      fullPath: '/api/drafts/$draftId/events'
+      preLoaderRoute: typeof ApiDraftsDraftIdEventsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/presentations/$id/versions/': {
       id: '/api/presentations/$id/versions/'
       path: '/api/presentations/$id/versions'
@@ -1235,6 +1255,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiShareTokenRoute: ApiShareTokenRoute,
   ApiBrandKitsIndexRoute: ApiBrandKitsIndexRoute,
   ApiPresentationsIndexRoute: ApiPresentationsIndexRoute,
+  ApiDraftsDraftIdEventsRoute: ApiDraftsDraftIdEventsRoute,
   ApiDraftsDraftIdGenerateRoute: ApiDraftsDraftIdGenerateRoute,
   ApiDraftsDraftIdRegenerateRoute: ApiDraftsDraftIdRegenerateRoute,
   ApiHealthWorkersWorkerClassRoute: ApiHealthWorkersWorkerClassRoute,

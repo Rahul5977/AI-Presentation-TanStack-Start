@@ -1,5 +1,7 @@
 import OpenAI from 'openai'
 
+import { ModelOutputError } from '@/server/ai/runtime'
+import type { TokenUsage } from '@/server/ai/runtime'
 import {
   outlineGenerationSchema,
   resolveSlideCount,
@@ -39,12 +41,14 @@ function getOutlineModel() {
 
 export async function generateOutlineWithOpenAI(
   input: PresentationInput,
-): Promise<OutlineGenerationResult> {
+  opts: { model?: string; signal?: AbortSignal } = {},
+): Promise<{ value: OutlineGenerationResult; usage: TokenUsage }> {
   const client = getOpenAIClient()
   const targetSlides = resolveSlideCount(input)
 
-  const response = await client.responses.create({
-    model: getOutlineModel(),
+  const response = await client.responses.create(
+    {
+    model: opts.model ?? getOutlineModel(),
     input: [
       {
         role: 'system',
@@ -103,7 +107,9 @@ export async function generateOutlineWithOpenAI(
         },
       },
     },
-  })
+    },
+    { signal: opts.signal },
+  )
 
   const content = response.output_text
   if (!content) {
@@ -112,10 +118,16 @@ export async function generateOutlineWithOpenAI(
 
   const parsed = outlineGenerationSchema.safeParse(JSON.parse(content))
   if (!parsed.success) {
-    throw new Error('OpenAI returned invalid outline structure.')
+    throw new ModelOutputError('OpenAI returned invalid outline structure.')
   }
 
-  return parsed.data
+  return {
+    value: parsed.data,
+    usage: {
+      inputTokens: response.usage?.input_tokens,
+      outputTokens: response.usage?.output_tokens,
+    },
+  }
 }
 
 export async function generateSlideVisualWithOpenAI(

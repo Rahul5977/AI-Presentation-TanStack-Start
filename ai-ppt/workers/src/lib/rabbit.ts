@@ -1,5 +1,6 @@
 import amqplib from 'amqplib'
 
+import { classifyError } from '../../../src/server/ai/runtime'
 import {
   DEFAULT_MAX_ATTEMPTS,
   DEFAULT_RETRY_BASE_MS,
@@ -93,9 +94,22 @@ export async function consumeJsonQueue<
     } catch (error) {
       const attempt = Number(payload.attempt ?? 0)
       const nextAttempt = attempt + 1
-      const maxAttempts = DEFAULT_MAX_ATTEMPTS
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown worker error'
+
+      // Honor a per-job maxAttempts override when present (falls back to the env
+      // default). Terminal errors (bad input / unparseable output / budget) are
+      // dead-lettered immediately rather than retried through every attempt.
+      let maxAttempts = DEFAULT_MAX_ATTEMPTS
+      if (payload.jobId) {
+        const job = await prisma.generationJob.findUnique({
+          where: { id: payload.jobId },
+          select: { maxAttempts: true },
+        })
+        if (job?.maxAttempts && job.maxAttempts > 0) maxAttempts = job.maxAttempts
+      }
+      const isTerminal = classifyError(error) === 'terminal'
+      const giveUp = isTerminal || nextAttempt >= maxAttempts
 
       if (payload.jobId) {
         await prisma.generationJob.updateMany({
@@ -103,22 +117,23 @@ export async function consumeJsonQueue<
           data: {
             attempt: nextAttempt,
             lastError: errorMessage,
-            status: nextAttempt >= maxAttempts ? 'DEAD_LETTER' : 'PENDING',
-            deadLetteredAt: nextAttempt >= maxAttempts ? new Date() : null,
+            status: giveUp ? 'DEAD_LETTER' : 'PENDING',
+            deadLetteredAt: giveUp ? new Date() : null,
           },
         })
       }
 
-      if (nextAttempt >= maxAttempts) {
+      if (giveUp) {
         logger.error(
-          { queueName, payload, err: errorMessage },
-          'Job moved to dead letter',
+          { queueName, payload, err: errorMessage, terminal: isTerminal, attempt: nextAttempt },
+          isTerminal ? 'Job dead-lettered (terminal error)' : 'Job moved to dead letter',
         )
         captureWorkerException(error, {
           queueName,
           attempt: nextAttempt,
           payload,
           final: true,
+          terminal: isTerminal,
         })
         channel.reject(message, false)
         return

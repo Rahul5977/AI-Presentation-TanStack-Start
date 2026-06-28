@@ -8,18 +8,25 @@ type BaseJobMessage = {
   attempt: number
 }
 
+export type OutlineJobMessage = BaseJobMessage & {
+  draftId: string
+  userId: string
+}
+
 export type SlideContentJobMessage = BaseJobMessage & {
   slideId: string
   prompt: string
   tone: string
   depth: string
   language: string
+  userId?: string
 }
 
 export type SlideImageJobMessage = BaseJobMessage & {
   slideId: string
   visualConcept: string
   imageStyle: string
+  userId?: string
 }
 
 export type SlideImageUploadJobMessage = BaseJobMessage & {
@@ -46,6 +53,10 @@ async function publish(
       'x-idempotency-key': payload.idempotencyKey,
     },
   })
+}
+
+export async function publishOutlineJob(payload: OutlineJobMessage) {
+  await publish(QUEUE_NAMES.outlineGenerate, payload)
 }
 
 export async function publishSlideContentJob(payload: SlideContentJobMessage) {

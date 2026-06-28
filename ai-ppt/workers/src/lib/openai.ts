@@ -1,5 +1,8 @@
 import OpenAI from 'openai'
 
+import type { TokenUsage } from '../../../src/server/ai/runtime/pricing'
+import type { SlideContentValue } from './gemini'
+
 let openAIClient: OpenAI | null = null
 
 function getOpenAIClient() {
@@ -11,19 +14,23 @@ function getOpenAIClient() {
   return openAIClient
 }
 
-export async function generateSlideContent(input: {
-  prompt: string
-  language: string
-  tone: string
-  depth: string
-  title: string
-  intent: string
-  bullets: string[]
-  visualConcept: string
-}) {
+export async function generateSlideContent(
+  input: {
+    prompt: string
+    language: string
+    tone: string
+    depth: string
+    title: string
+    intent: string
+    bullets: string[]
+    visualConcept: string
+  },
+  opts: { model?: string; signal?: AbortSignal } = {},
+): Promise<{ value: SlideContentValue; usage: TokenUsage }> {
   const client = getOpenAIClient()
-  const response = await client.responses.create({
-    model: process.env.OPENAI_SLIDE_MODEL ?? 'gpt-4.1-mini',
+  const response = await client.responses.create(
+    {
+    model: opts.model ?? process.env.OPENAI_SLIDE_MODEL ?? 'gpt-4.1-mini',
     input: [
       {
         role: 'system',
@@ -82,40 +89,50 @@ Write ALL text in the user's language; match the requested tone and depth.`,
         },
       },
     },
-  })
+    },
+    { signal: opts.signal },
+  )
 
   if (!response.output_text) throw new Error('OpenAI returned empty slide content.')
-  return JSON.parse(response.output_text) as {
-    title: string
-    intent: string
-    bullets: string[]
-    speakerNotes: string
-    layoutHints: Record<string, unknown>
-    imagePrompt: string
+  const value = JSON.parse(response.output_text) as SlideContentValue
+  return {
+    value,
+    usage: {
+      inputTokens: response.usage?.input_tokens,
+      outputTokens: response.usage?.output_tokens,
+    },
   }
 }
 
-export async function generateSlideImageBase64(input: {
-  visualConcept: string
-  imageStyle: string
-  imagePrompt?: string
-}) {
+export async function generateSlideImageBase64(
+  input: {
+    visualConcept: string
+    imageStyle: string
+    imagePrompt?: string
+  },
+  opts: { model?: string; signal?: AbortSignal } = {},
+): Promise<{ value: string; usage: TokenUsage }> {
   const client = getOpenAIClient()
   const prompt = `${input.imagePrompt ?? input.visualConcept}. Image style: ${input.imageStyle}.`
-  const imageModel = process.env.OPENAI_IMAGE_MODEL ?? 'gpt-image-1'
-  const quality = process.env.OPENAI_IMAGE_QUALITY ?? 'low'
-  const size = process.env.OPENAI_IMAGE_SIZE ?? '1536x1024'
+  const imageModel = opts.model ?? process.env.OPENAI_IMAGE_MODEL ?? 'gpt-image-1'
+  const quality = (process.env.OPENAI_IMAGE_QUALITY ??
+    'low') as OpenAI.Images.ImageGenerateParams['quality']
+  const size = (process.env.OPENAI_IMAGE_SIZE ??
+    '1536x1024') as OpenAI.Images.ImageGenerateParams['size']
 
-  const response = await client.images.generate({
-    model: imageModel,
-    prompt,
-    quality,
-    size,
-  })
+  const response = await client.images.generate(
+    {
+      model: imageModel,
+      prompt,
+      quality,
+      size,
+    },
+    { signal: opts.signal },
+  )
 
   const base64 = response.data?.[0]?.b64_json
   if (!base64) {
     throw new Error('OpenAI did not return image data.')
   }
-  return base64
+  return { value: base64, usage: { images: 1 } }
 }

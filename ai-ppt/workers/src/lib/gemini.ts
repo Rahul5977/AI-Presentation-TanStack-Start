@@ -1,5 +1,7 @@
 import { GoogleGenAI, Type } from '@google/genai'
 
+import type { TokenUsage } from '../../../src/server/ai/runtime/pricing'
+
 let client: GoogleGenAI | null = null
 
 function getClient(): GoogleGenAI {
@@ -22,16 +24,28 @@ const IMAGE_STYLE_PROMPTS: Record<string, string> = {
 
 // ── Slide content generation ─────────────────────────────────────────────────
 
-export async function generateSlideContent(input: {
-  prompt: string
-  language: string
-  tone: string
-  depth: string
+export type SlideContentValue = {
   title: string
   intent: string
   bullets: string[]
-  visualConcept: string
-}) {
+  speakerNotes: string
+  layoutHints: Record<string, unknown>
+  imagePrompt: string
+}
+
+export async function generateSlideContent(
+  input: {
+    prompt: string
+    language: string
+    tone: string
+    depth: string
+    title: string
+    intent: string
+    bullets: string[]
+    visualConcept: string
+  },
+  opts: { model?: string; signal?: AbortSignal } = {},
+): Promise<{ value: SlideContentValue; usage: TokenUsage }> {
   const ai = getClient()
 
   const systemInstruction = `You are an expert presentation writer polishing a single slide.
@@ -53,10 +67,11 @@ Return strict JSON with exactly these fields:
 Write ALL output text in ${input.language}. Tone: ${input.tone}. Depth: ${input.depth}.`
 
   const response = await ai.models.generateContent({
-    model: textModel(),
+    model: opts.model ?? textModel(),
     contents: JSON.stringify(input),
     config: {
       systemInstruction,
+      abortSignal: opts.signal,
       responseMimeType: 'application/json',
       responseSchema: {
         type: Type.OBJECT,
@@ -83,23 +98,26 @@ Write ALL output text in ${input.language}. Tone: ${input.tone}. Depth: ${input.
   const text = response.text
   if (!text) throw new Error('Gemini returned empty slide content.')
 
-  return JSON.parse(text) as {
-    title: string
-    intent: string
-    bullets: string[]
-    speakerNotes: string
-    layoutHints: Record<string, unknown>
-    imagePrompt: string
+  const value = JSON.parse(text) as SlideContentValue
+  return {
+    value,
+    usage: {
+      inputTokens: response.usageMetadata?.promptTokenCount,
+      outputTokens: response.usageMetadata?.candidatesTokenCount,
+    },
   }
 }
 
 // ── Image generation (Imagen) ────────────────────────────────────────────────
 
-export async function generateSlideImageBase64(input: {
-  visualConcept: string
-  imageStyle: string
-  imagePrompt?: string
-}): Promise<string> {
+export async function generateSlideImageBase64(
+  input: {
+    visualConcept: string
+    imageStyle: string
+    imagePrompt?: string
+  },
+  opts: { model?: string; signal?: AbortSignal } = {},
+): Promise<{ value: string; usage: TokenUsage }> {
   const ai = getClient()
 
   const styleModifier = IMAGE_STYLE_PROMPTS[input.imageStyle] ?? IMAGE_STYLE_PROMPTS.ILLUSTRATION
@@ -107,17 +125,18 @@ export async function generateSlideImageBase64(input: {
   const fullPrompt = `${basePrompt}. Style: ${styleModifier}. Suitable for a professional presentation slide. No text overlays.`
 
   const response = await ai.models.generateImages({
-    model: imageModel(),
+    model: opts.model ?? imageModel(),
     prompt: fullPrompt,
     config: {
       numberOfImages: 1,
       outputMimeType: 'image/png',
       aspectRatio: '16:9',
+      abortSignal: opts.signal,
     },
   })
 
   const imageBytes = response.generatedImages?.[0]?.image?.imageBytes
   if (!imageBytes) throw new Error('Imagen returned no image data.')
 
-  return imageBytes
+  return { value: imageBytes, usage: { images: 1 } }
 }

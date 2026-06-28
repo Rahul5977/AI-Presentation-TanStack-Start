@@ -73,10 +73,18 @@ enum SlideStatus {
 }
 
 enum JobType {
+  OUTLINE_GENERATE
   SLIDE_CONTENT_GENERATE
   SLIDE_IMAGE_GENERATE
   SLIDE_IMAGE_UPLOAD
   PRESENTATION_FINALIZE
+}
+
+enum DraftStatus {
+  OUTLINE_PENDING
+  OUTLINE_GENERATING
+  OUTLINE_READY
+  OUTLINE_FAILED
 }
 
 enum JobStatus {
@@ -318,6 +326,8 @@ model Draft {
   imageStyle     ImageStyle
   depth          DepthType
   themeOverrides Json?
+  status         DraftStatus @default(OUTLINE_READY)
+  lastError      String?
   slides         DraftSlide[]
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
@@ -393,6 +403,11 @@ model GenerationJob {
   deadLetteredAt DateTime?
   lastErrorCode  String?
   lastError      String?
+  inputTokens    Int?
+  outputTokens   Int?
+  estCostUsd     Float?
+  provider       String?
+  model          String?
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
 

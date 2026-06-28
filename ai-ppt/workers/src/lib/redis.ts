@@ -34,3 +34,27 @@ export async function publishProgressEvent(
     )
   }
 }
+
+export async function publishDraftEvent(
+  draftId: string,
+  event: Record<string, unknown>,
+) {
+  try {
+    const redis = getRedisClient()
+    await redis.publish(
+      `draft:${draftId}:events`,
+      JSON.stringify({
+        ts: new Date().toISOString(),
+        ...event,
+      }),
+    )
+  } catch (error) {
+    logger.warn(
+      {
+        draftId,
+        err: error instanceof Error ? error.message : String(error),
+      },
+      'Draft event publish failed; continuing without realtime event',
+    )
+  }
+}

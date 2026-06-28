@@ -62,7 +62,7 @@ services:
     env_file:
       - ./.env.production
     environment:
-      WORKER_CLASSES: "content"
+      WORKER_CLASSES: "outline,content"
     depends_on:
       postgres:
         condition: service_healthy

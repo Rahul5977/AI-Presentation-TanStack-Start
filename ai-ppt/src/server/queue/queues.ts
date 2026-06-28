@@ -1,4 +1,5 @@
 export const QUEUE_NAMES = {
+  outlineGenerate: 'outline.generate',
   slideContentGenerate: 'slide.content.generate',
   slideImageGenerate: 'slide.image.generate',
   slideImageUpload: 'slide.image.upload',

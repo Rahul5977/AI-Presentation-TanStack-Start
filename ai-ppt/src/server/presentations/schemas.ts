@@ -42,6 +42,7 @@ export const outlineGenerationSchema = z.object({
 
 export type PresentationInput = z.infer<typeof presentationInputSchema>
 export type OutlineSlideInput = z.infer<typeof outlineSlideSchema>
+export type OutlineGeneration = z.infer<typeof outlineGenerationSchema>
 
 export function normalizePresentationInput(
   raw: unknown,

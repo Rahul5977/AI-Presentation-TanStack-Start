@@ -1,3 +1,4 @@
+import { callModel, getFallbackChain } from '../../../src/server/ai/runtime'
 import { publishSlideImageUploadJob } from '../../../src/server/queue/publish'
 import { QUEUE_NAMES } from '../../../src/server/queue/queues'
 import { consumeJsonQueue } from '../lib/rabbit'
@@ -14,27 +15,8 @@ type ImageMessage = {
   attempt: number
   visualConcept: string
   imageStyle: string
-}
-
-type ImageProvider = 'imagen' | 'openai'
-
-function resolveImageProvider(): ImageProvider {
-  const raw =
-    process.env.IMAGE_PROVIDER ??
-    process.env.AI_PROVIDER ??
-    'imagen'
-  return raw.toLowerCase() === 'openai' ? 'openai' : 'imagen'
-}
-
-async function generateSlideImageBase64(input: {
-  visualConcept: string
-  imageStyle: string
-  imagePrompt?: string
-}) {
-  if (resolveImageProvider() === 'openai') {
-    return await generateSlideImageWithOpenAI(input)
-  }
-  return await generateSlideImageWithImagen(input)
+  // Populated end-to-end in W4 for per-user budget attribution; optional here.
+  userId?: string
 }
 
 export async function startImageConsumer() {
@@ -62,11 +44,23 @@ export async function startImageConsumer() {
       throw new Error('Slide not found for image generation.')
     }
 
-    const imageBase64 = await generateSlideImageBase64({
+    const imageInput = {
       visualConcept: payload.visualConcept,
       imageStyle: payload.imageStyle,
       imagePrompt: slide.imagePrompt ?? undefined,
+    }
+    // No response cache for images: base64 payloads are too large for Redis.
+    const generation = await callModel({
+      op: 'image',
+      kind: 'image',
+      chain: getFallbackChain('image'),
+      userId: payload.userId,
+      run: async ({ provider, model, signal }) =>
+        provider === 'openai'
+          ? await generateSlideImageWithOpenAI(imageInput, { model, signal })
+          : await generateSlideImageWithImagen(imageInput, { model, signal }),
     })
+    const imageBase64 = generation.value
 
     const uploadIdempotencyKey = `${payload.presentationId}:${payload.slideId}:upload:v1`
     const uploadJob = await prisma.generationJob.upsert({
@@ -97,6 +91,9 @@ export async function startImageConsumer() {
       data: {
         status: 'SUCCEEDED',
         completedAt: new Date(),
+        provider: generation.provider,
+        model: generation.model,
+        estCostUsd: generation.estCostUsd,
       },
     })
 

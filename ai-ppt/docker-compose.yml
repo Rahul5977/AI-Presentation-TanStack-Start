@@ -72,7 +72,7 @@ services:
       IMAGEKIT_PUBLIC_KEY: "${IMAGEKIT_PUBLIC_KEY:-}"
       IMAGEKIT_PRIVATE_KEY: "${IMAGEKIT_PRIVATE_KEY:-}"
       IMAGEKIT_URL_ENDPOINT: "${IMAGEKIT_URL_ENDPOINT:-}"
-      WORKER_CLASSES: "${WORKER_CLASSES:-content,image,upload,finalize}"
+      WORKER_CLASSES: "${WORKER_CLASSES:-outline,content,image,upload,finalize}"
       
     depends_on:
       postgres:
