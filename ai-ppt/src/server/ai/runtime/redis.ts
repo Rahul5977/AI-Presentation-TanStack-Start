@@ -30,13 +30,18 @@ let client: RedisLike | null = null
  */
 export function aiRedis(): RedisLike {
   if (!client) {
-    client = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
+    const instance = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
       lazyConnect: true,
       maxRetriesPerRequest: 2,
       // Don't let a transient Redis blip throw synchronously on command issue;
       // primitives handle errors and fail open/closed per their policy.
       enableOfflineQueue: true,
-    }) as unknown as RedisLike
+      retryStrategy: (times) => Math.min(times * 200, 5_000),
+    })
+    // Prevent unhandled 'error' events from crashing the process; primitives
+    // already fail open/closed on command errors.
+    instance.on('error', () => {})
+    client = instance as unknown as RedisLike
   }
   return client
 }

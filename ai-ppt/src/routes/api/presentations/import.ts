@@ -54,6 +54,7 @@ export const Route = createFileRoute('/api/presentations/import')({
           await assertRateLimit({
             userId: session.user.id,
             bucket: 'import',
+            failClosed: true,
           })
           await assertDeckCreationAllowed(session.user.id)
           await assertQuota(session.user.id, 'SOURCE_IMPORTS')

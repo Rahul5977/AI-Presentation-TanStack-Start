@@ -51,6 +51,7 @@ export const Route = createFileRoute('/api/drafts/$draftId/generate')({
           await assertRateLimit({
             userId: session.user.id,
             bucket: 'generate',
+            failClosed: true,
           })
         } catch (error) {
           return json({ error: rateLimitErrorMessage(error) }, { status: 429 })

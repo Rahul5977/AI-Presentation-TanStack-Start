@@ -4,6 +4,7 @@ import { classifyError } from '../../../src/server/ai/runtime'
 import {
   DEFAULT_MAX_ATTEMPTS,
   DEFAULT_RETRY_BASE_MS,
+  queuePrefetch,
   queueRetryName,
 } from '../../../src/server/queue/queues'
 import { ensureQueueTopology } from '../../../src/server/queue/topology'
@@ -20,9 +21,31 @@ function getRabbitUrl() {
   return process.env.RABBITMQ_URL ?? 'amqp://localhost:5672'
 }
 
+function resetRabbitState() {
+  // Drop cached promises so the next call re-establishes the connection/channel.
+  connectionPromise = null
+  channelPromise = null
+}
+
 async function getConnection() {
   if (!connectionPromise) {
-    connectionPromise = amqplib.connect(getRabbitUrl())
+    connectionPromise = (async () => {
+      const connection = await amqplib.connect(getRabbitUrl())
+      // A dropped broker connection must not leave a stale cached promise, or
+      // publishing/consuming breaks until process restart. Reset on error/close
+      // so the next call reconnects.
+      connection.on('error', (err) => {
+        logger.warn({ err: err instanceof Error ? err.message : String(err) }, 'RabbitMQ connection error')
+      })
+      connection.on('close', () => {
+        if (!isDraining) logger.warn('RabbitMQ connection closed; will reconnect on next use')
+        resetRabbitState()
+      })
+      return connection
+    })().catch((err) => {
+      resetRabbitState()
+      throw err
+    })
   }
   return await connectionPromise
 }
@@ -33,9 +56,18 @@ export async function getWorkerChannel() {
       const connection = await getConnection()
       const channel = await connection.createChannel()
       channel.prefetch(5)
+      channel.on('error', (err) => {
+        logger.warn({ err: err instanceof Error ? err.message : String(err) }, 'RabbitMQ channel error')
+      })
+      channel.on('close', () => {
+        channelPromise = null
+      })
       await ensureQueueTopology(channel)
       return channel
-    })()
+    })().catch((err) => {
+      channelPromise = null
+      throw err
+    })
   }
   return await channelPromise
 }
@@ -70,6 +102,8 @@ export async function consumeJsonQueue<
   TPayload extends { attempt?: number; jobId?: string },
 >(queueName: string, handler: JobHandler<TPayload>) {
   const channel = await getWorkerChannel()
+  // Per-consumer prefetch (global=false) so each queue class gets its own limit.
+  await channel.prefetch(queuePrefetch(queueName), false)
 
   await channel.consume(queueName, async (message) => {
     if (!message) return

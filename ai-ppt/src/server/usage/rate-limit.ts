@@ -9,10 +9,13 @@ let redisClient: Redis | null = null
 
 function redis() {
   if (redisClient) return redisClient
-  redisClient = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
+  const instance = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
     lazyConnect: true,
     maxRetriesPerRequest: 1,
   })
+  // Avoid unhandled 'error' events crashing the web process on a Redis blip.
+  instance.on('error', () => {})
+  redisClient = instance
   return redisClient
 }
 
@@ -31,6 +34,9 @@ export async function assertRateLimit(params: {
   bucket: string
   max?: number
   windowMs?: number
+  /** When true, deny the request if Redis is unreachable instead of failing
+   *  open. Use on expensive AI endpoints where abuse has real cost. */
+  failClosed?: boolean
 }) {
   const envMax = Number.parseInt(process.env.RATE_LIMIT_MAX ?? '', 10)
   const envWindow = Number.parseInt(process.env.RATE_LIMIT_WINDOW_MS ?? '', 10)
@@ -49,15 +55,19 @@ export async function assertRateLimit(params: {
       await client.pexpire(key, windowMs)
     }
   } catch (error) {
-    // Fail open: if the rate-limit backend (Redis) is unreachable, never block a
-    // legitimate request behind an infra outage. Log so it's visible in ops.
     logger.warn(
       {
         bucket: params.bucket,
+        failClosed: Boolean(params.failClosed),
         err: error instanceof Error ? error.message : String(error),
       },
-      'Rate limit check skipped (Redis unavailable)',
+      'Rate limit backend (Redis) unavailable',
     )
+    // Expensive AI endpoints fail CLOSED so a Redis outage can't remove all
+    // abuse/cost protection; cheap endpoints fail open for availability.
+    if (params.failClosed) {
+      throw new RateLimitError(windowMs, max)
+    }
     return
   }
 

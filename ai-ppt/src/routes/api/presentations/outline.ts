@@ -65,6 +65,7 @@ export const Route = createFileRoute('/api/presentations/outline')({
             await assertRateLimit({
               userId: session.user.id,
               bucket: 'outline',
+              failClosed: true,
             })
             await assertDeckCreationAllowed(session.user.id)
             await assertQuota(session.user.id, 'PRESENTATIONS_CREATED')

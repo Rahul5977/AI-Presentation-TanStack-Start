@@ -6,7 +6,19 @@ let redisClient: Redis | null = null
 
 export function getRedisClient() {
   if (!redisClient) {
-    redisClient = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379')
+    redisClient = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
+      maxRetriesPerRequest: 3,
+      // Exponential reconnect backoff, capped, so a Redis blip doesn't spin hot.
+      retryStrategy: (times) => Math.min(times * 200, 5_000),
+    })
+    // Without an 'error' listener ioredis emits unhandled error events that can
+    // crash the worker. Log and let the retry strategy recover.
+    redisClient.on('error', (err) => {
+      logger.warn(
+        { err: err instanceof Error ? err.message : String(err) },
+        'Redis client error (will retry)',
+      )
+    })
   }
   return redisClient
 }

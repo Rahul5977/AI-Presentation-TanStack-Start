@@ -36,6 +36,7 @@ export const Route = createFileRoute('/api/presentations/$id/slides/$slideId/cha
           await assertRateLimit({
             userId: session.user.id,
             bucket: 'slide-assistant',
+            failClosed: true,
           })
         } catch (error) {
           return json({ error: rateLimitErrorMessage(error) }, { status: 429 })
