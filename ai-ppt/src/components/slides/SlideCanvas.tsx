@@ -6,12 +6,14 @@ type SlideCanvasProps = {
   template: TemplateConfig
   children: ReactNode
   className?: string
+  logoUrl?: string | null
 }
 
 export default function SlideCanvas({
   template,
   children,
   className,
+  logoUrl,
 }: SlideCanvasProps) {
   const style = {
     '--slide-background': template.colors.background,
@@ -38,7 +40,16 @@ export default function SlideCanvas({
         className,
       )}
     >
-      <div className="aspect-video w-full p-6 sm:p-8">{children}</div>
+      <div className="relative aspect-video w-full p-6 sm:p-8">
+        {logoUrl ? (
+          <img
+            src={logoUrl}
+            alt="Brand logo"
+            className="pointer-events-none absolute right-4 top-4 z-10 h-6 w-auto max-w-24 object-contain opacity-90 sm:right-6 sm:top-6 sm:h-7"
+          />
+        ) : null}
+        {children}
+      </div>
     </div>
   )
 }

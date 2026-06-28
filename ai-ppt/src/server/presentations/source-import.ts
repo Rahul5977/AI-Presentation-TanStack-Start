@@ -40,7 +40,7 @@ export async function extractImportSource(input: ImportSourceInput): Promise<{
   if (input.mode === 'url') {
     const response = await fetch(input.url, {
       headers: {
-        'user-agent': 'Mozilla/5.0 (compatible; PPTAIImporter/1.0)',
+        'user-agent': 'Mozilla/5.0 (compatible; KodexaAIImporter/1.0)',
       },
     })
     if (!response.ok) {

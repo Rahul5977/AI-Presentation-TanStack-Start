@@ -34,16 +34,23 @@ export async function generateSlideContent(input: {
 }) {
   const ai = getClient()
 
-  const systemInstruction = `You generate enhanced presentation slide content.
-Return strict JSON with exactly these fields:
-- title: improved slide title
-- intent: one sentence subtitle or takeaway
-- bullets: 3-6 concise, impactful bullet points (strings)
-- speakerNotes: 2-4 sentences for the presenter
-- layoutHints: object with layoutType (one of: title|content|twoColumn|imageLeft|quote|stats|sectionDivider|closing) and emphasis (primary|secondary|balanced)
-- imagePrompt: detailed image generation prompt matching the visual concept
+  const systemInstruction = `You are an expert presentation writer polishing a single slide.
+Refine the provided draft into its strongest final form. Keep it on-topic for the slide's
+title and intent; do not drift to a different subject.
 
-Language: ${input.language}. Tone: ${input.tone}. Depth: ${input.depth}.`
+Return strict JSON with exactly these fields:
+- title: a sharp, specific title (no generic words like "Introduction"/"Overview")
+- intent: one-sentence takeaway — the single point the audience should remember
+- bullets: 3-6 parallel, concrete bullets. Prefer specifics (numbers, examples, outcomes)
+  over vague claims. Each bullet is one scannable line, not a paragraph.
+- speakerNotes: 2-4 sentences giving the presenter a natural talking track that ADDS
+  context beyond the bullets (a why, an example, a transition) — never just restate them.
+- layoutHints: object with layoutType (one of: title|content|twoColumn|imageLeft|quote|stats|sectionDivider|closing)
+  chosen to fit the content (use "stats" for data-heavy slides, "quote" for a memorable line,
+  "sectionDivider" for transitions) and emphasis (primary|secondary|balanced)
+- imagePrompt: a vivid, specific image prompt matching the visual concept (subject, style, mood; no text)
+
+Write ALL output text in ${input.language}. Tone: ${input.tone}. Depth: ${input.depth}.`
 
   const response = await ai.models.generateContent({
     model: textModel(),

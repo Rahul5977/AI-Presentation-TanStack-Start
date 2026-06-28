@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
 import { prisma } from '@/lib/db'
+import { parseThemeOverrides } from '@/templates/theme'
 
 export const Route = createFileRoute('/api/share/$token')({
   server: {
@@ -12,6 +13,7 @@ export const Route = createFileRoute('/api/share/$token')({
             id: true,
             title: true,
             template: true,
+            themeOverrides: true,
             slides: {
               orderBy: { position: 'asc' },
               select: {
@@ -23,6 +25,7 @@ export const Route = createFileRoute('/api/share/$token')({
                 visualConcept: true,
                 speakerNotes: true,
                 layoutHints: true,
+                slideData: true,
                 imageUrl: true,
                 status: true,
               },
@@ -35,6 +38,7 @@ export const Route = createFileRoute('/api/share/$token')({
           presentationId: presentation.id,
           title: presentation.title,
           template: presentation.template,
+          themeOverrides: parseThemeOverrides(presentation.themeOverrides),
           slides: presentation.slides,
         })
       },

@@ -7,10 +7,13 @@ import SlideAssistantPanel from '@/components/editor/SlideAssistantPanel'
 import ShareDialog from '@/components/editor/ShareDialog'
 import ExportDialog from '@/components/editor/ExportDialog'
 import VersionHistoryDialog from '@/components/editor/VersionHistoryDialog'
+import ThemeCustomizer from '@/components/editor/ThemeCustomizer'
 import { AUTH_LOGIN_PATH } from '@/lib/auth-path'
 import { getSession } from '@/lib/auth-function'
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
-import { getTemplateByKind, listTemplates } from '@/templates/registry'
+import { listTemplates } from '@/templates/registry'
+import { resolveTemplate } from '@/templates/theme'
+import type { ThemeOverrides } from '@/templates/theme'
 import type { TemplateKind } from '@/templates/schema'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -31,10 +34,10 @@ import {
   Download,
   Link,
   History,
+  Palette,
   Plus,
   Presentation,
   Save,
-  Sparkles,
 } from 'lucide-react'
 
 // ─── types ─────────────────────────────────────────────────────────────────
@@ -46,6 +49,7 @@ type PresentationState = {
   title: string
   status: 'DRAFT' | 'QUEUED' | 'GENERATING' | 'READY' | 'FAILED'
   template: TemplateKind
+  themeOverrides: ThemeOverrides | null
   tone: string
   depth: string
   imageStyle: string
@@ -90,6 +94,7 @@ function PresentationProgressPage() {
   const [showShare, setShowShare] = useState(false)
   const [showExport, setShowExport] = useState(false)
   const [showVersions, setShowVersions] = useState(false)
+  const [showTheme, setShowTheme] = useState(false)
   const [selectedSlideId, setSelectedSlideId] = useState<string | null>(null)
   const lastStatusRef = useRef<PresentationState['status'] | null>(null)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -340,6 +345,87 @@ function PresentationProgressPage() {
     [id],
   )
 
+  const handleVisualize = useCallback(
+    async (slideId: string, kind: 'auto' | 'chart' | 'table' | 'timeline' | 'metrics') => {
+      const res = await fetch(
+        `/api/presentations/${id}/slides/${slideId}/visualize`,
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ kind }),
+        },
+      )
+      const data = (await res.json()) as { slideData?: unknown; error?: string }
+      if (!res.ok) {
+        toast.error(data.error ?? 'Could not generate visual.')
+        return
+      }
+      setPresentation((cur) =>
+        cur
+          ? {
+              ...cur,
+              slides: cur.slides.map((s) =>
+                s.id === slideId ? { ...s, slideData: data.slideData ?? null } : s,
+              ),
+            }
+          : cur,
+      )
+      toast.success('Slide visual generated.')
+    },
+    [id],
+  )
+
+  const handleRemoveData = useCallback(
+    async (slideId: string) => {
+      const res = await fetch(
+        `/api/presentations/${id}/slides/${slideId}/visualize`,
+        { method: 'DELETE' },
+      )
+      if (!res.ok) {
+        toast.error('Could not remove data.')
+        return
+      }
+      setPresentation((cur) =>
+        cur
+          ? {
+              ...cur,
+              slides: cur.slides.map((s) =>
+                s.id === slideId ? { ...s, slideData: null } : s,
+              ),
+            }
+          : cur,
+      )
+    },
+    [id],
+  )
+
+  const handleTextAction = useCallback(
+    async (slideId: string, action: 'MAKE_SHORTER' | 'MORE_FORMAL' | 'ADD_STATISTIC') => {
+      const res = await fetch(`/api/presentations/${id}/text-actions`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ slideId, action }),
+      })
+      const data = (await res.json()) as { bullets?: string[]; error?: string }
+      if (!res.ok || !data.bullets) {
+        toast.error(data.error ?? 'Text action failed.')
+        return
+      }
+      setPresentation((cur) =>
+        cur
+          ? {
+              ...cur,
+              slides: cur.slides.map((s) =>
+                s.id === slideId ? { ...s, bullets: data.bullets! } : s,
+              ),
+            }
+          : cur,
+      )
+      toast.success('Bullets updated.')
+    },
+    [id],
+  )
+
   const handleImageUpload = useCallback(
     async (slideId: string, file: File) => {
       const formData = new FormData()
@@ -402,10 +488,16 @@ function PresentationProgressPage() {
     return `${readyCount}/${presentation.slides.length} slides ready`
   }, [presentation])
 
-  const currentTemplate = useMemo(
-    () => (presentation ? getTemplateByKind(presentation.template) : getTemplateByKind('MINIMAL_MONO')),
-    [presentation],
+  const resolvedTheme = useMemo(
+    () =>
+      resolveTemplate(
+        presentation?.template ?? 'MINIMAL_MONO',
+        presentation?.themeOverrides ?? null,
+      ),
+    [presentation?.template, presentation?.themeOverrides],
   )
+  const currentTemplate = resolvedTheme.template
+  const brandLogoUrl = resolvedTheme.logoUrl
 
   const isEditorMode = presentation?.status === 'READY' || presentation?.status === 'FAILED'
   const isGenerating = presentation?.status === 'GENERATING' || presentation?.status === 'QUEUED'
@@ -505,10 +597,6 @@ function PresentationProgressPage() {
                   <History size={14} className="mr-1.5" />
                   History
                 </Button>
-                <Button size="sm" variant="ghost" disabled title="Planned for v1.1">
-                  <Sparkles size={14} className="mr-1.5" />
-                  Quick actions (v1.1)
-                </Button>
                 <Button
                   size="sm"
                   variant="ghost"
@@ -518,12 +606,9 @@ function PresentationProgressPage() {
                 >
                   Citation mode (v1.1)
                 </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => toast.info('Brand kit controls are scaffolded for v1.1.')}
-                >
-                  Brand kit (v1.1)
+                <Button size="sm" variant="outline" onClick={() => setShowTheme(true)}>
+                  <Palette size={14} className="mr-1.5" />
+                  Brand kit
                 </Button>
               </>
             )}
@@ -560,9 +645,11 @@ function PresentationProgressPage() {
                     visualConcept: slide.visualConcept,
                     speakerNotes: slide.speakerNotes,
                     layoutHints: slide.layoutHints,
+                    slideData: slide.slideData,
                     imageUrl: slide.imageUrl,
                   }}
                   template={currentTemplate}
+                  logoUrl={brandLogoUrl}
                 />
               </div>
             </article>
@@ -588,6 +675,7 @@ function PresentationProgressPage() {
                     key={slide.id}
                     slide={slide}
                     template={currentTemplate}
+                    logoUrl={brandLogoUrl}
                     presentationTone={presentation.tone}
                     presentationDepth={presentation.depth}
                     presentationImageStyle={presentation.imageStyle}
@@ -598,6 +686,9 @@ function PresentationProgressPage() {
                     onRegenContent={handleRegenContent}
                     onRegenImage={handleRegenImage}
                     onImageUpload={handleImageUpload}
+                    onVisualize={handleVisualize}
+                    onRemoveData={handleRemoveData}
+                    onTextAction={handleTextAction}
                   />
                 ))}
               </section>
@@ -646,6 +737,16 @@ function PresentationProgressPage() {
         onClose={() => setShowVersions(false)}
         presentationId={id}
         onRestored={loadPresentation}
+      />
+      <ThemeCustomizer
+        open={showTheme}
+        onClose={() => setShowTheme(false)}
+        presentationId={id}
+        baseTemplate={presentation.template}
+        initialOverrides={presentation.themeOverrides}
+        onApplied={(overrides) =>
+          setPresentation((cur) => (cur ? { ...cur, themeOverrides: overrides } : cur))
+        }
       />
     </main>
   )

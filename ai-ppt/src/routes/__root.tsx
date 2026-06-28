@@ -30,18 +30,23 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'PPT.ai — AI Presentation Studio',
+        title: 'Kodexa.ai — AI Presentation Studio',
       },
       {
         name: 'description',
         content:
-          'Create polished AI-powered presentation decks in minutes with flexible templates, image generation, and rapid export.',
+          'Kodexa.ai helps you create polished AI-powered presentation decks in minutes with flexible templates, image generation, and rapid export.',
       },
     ],
     links: [
       {
         rel: 'stylesheet',
         href: appCss,
+      },
+      {
+        rel: 'icon',
+        type: 'image/svg+xml',
+        href: '/kodexa-mark.svg',
       },
     ],
   }),

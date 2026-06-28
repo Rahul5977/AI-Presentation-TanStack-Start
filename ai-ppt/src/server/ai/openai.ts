@@ -4,6 +4,11 @@ import {
   outlineGenerationSchema,
   resolveSlideCount,
 } from '@/server/presentations/schemas'
+import { VISUALIZE_SYSTEM_INSTRUCTION } from '@/server/ai/visualize-prompt'
+import { buildOutlineSystemInstruction } from '@/server/ai/outline-prompt'
+import { buildTextActionSystemInstruction } from '@/server/ai/text-action-prompt'
+import type { SlideVisualInput } from '@/server/ai/visualize-prompt'
+import type { TextActionInput } from '@/server/ai/text-action-prompt'
 import type {
   OutlineSlideInput,
   PresentationInput,
@@ -43,16 +48,7 @@ export async function generateOutlineWithOpenAI(
     input: [
       {
         role: 'system',
-        content: `You generate presentation outlines. Return strict JSON only. Do not include markdown.
-The JSON must have:
-- title: short presentation title
-- slides: array of ${targetSlides} slide objects
-Each slide must include:
-- title
-- intent
-- bullets (2-6 concise strings)
-- visualConcept
-- speakerNotesHint (optional short string)`,
+        content: buildOutlineSystemInstruction(input, targetSlides),
       },
       {
         role: 'user',
@@ -120,4 +116,63 @@ Each slide must include:
   }
 
   return parsed.data
+}
+
+export async function generateSlideVisualWithOpenAI(
+  input: SlideVisualInput,
+): Promise<unknown> {
+  const client = getOpenAIClient()
+
+  const response = await client.responses.create({
+    model: getOutlineModel(),
+    input: [
+      { role: 'system', content: VISUALIZE_SYSTEM_INSTRUCTION },
+      { role: 'user', content: JSON.stringify(input) },
+    ],
+    text: { format: { type: 'json_object' } },
+  })
+
+  const content = response.output_text
+  if (!content) throw new Error('OpenAI returned empty visual.')
+  return JSON.parse(content)
+}
+
+export async function applyTextActionWithOpenAI(
+  input: TextActionInput,
+): Promise<string[]> {
+  const client = getOpenAIClient()
+  const response = await client.responses.create({
+    model: getOutlineModel(),
+    input: [
+      { role: 'system', content: buildTextActionSystemInstruction(input.action) },
+      {
+        role: 'user',
+        content: JSON.stringify({ bullets: input.bullets, context: input.context }),
+      },
+    ],
+    text: {
+      format: {
+        type: 'json_schema',
+        name: 'text_action',
+        strict: true,
+        schema: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['bullets'],
+          properties: {
+            bullets: { type: 'array', items: { type: 'string' } },
+          },
+        },
+      },
+    },
+  })
+  const content = response.output_text
+  if (!content) throw new Error('OpenAI returned empty text action result.')
+  const parsed = JSON.parse(content) as { bullets?: unknown }
+  if (!Array.isArray(parsed.bullets)) return []
+  return parsed.bullets
+    .filter((b): b is string => typeof b === 'string')
+    .map((b) => b.trim())
+    .filter((b) => b.length > 0)
+    .slice(0, 8)
 }

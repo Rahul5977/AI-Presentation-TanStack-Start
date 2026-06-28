@@ -98,7 +98,7 @@ export default function PaymentModal({
         key: order.keyId,
         amount: order.amount ?? priceInr * 100,
         currency: order.currency ?? 'INR',
-        name: 'Kodexa',
+        name: 'Kodexa.ai',
         description: `Deck credit — ₹${priceInr}`,
         order_id: order.orderId,
         prefill: {

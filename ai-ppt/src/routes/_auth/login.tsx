@@ -1,4 +1,5 @@
 import LoginForm from '#/components/auth/login-form'
+import { KodexaLogoMark, KodexaWordmark } from '@/components/brand/KodexaLogo'
 import { authClient } from '#/lib/auth-client'
 import { getSession } from '#/lib/auth-function'
 import { AUTH_HOME_PATH } from '#/lib/auth-path'
@@ -8,7 +9,6 @@ import {
   BarChart3,
   BrainCircuit,
   Layers,
-  Presentation,
   Sparkles,
   Zap,
 } from 'lucide-react'
@@ -77,11 +77,11 @@ function LoginPage() {
         >
           <Link to="/" className="inline-flex items-center gap-3 no-underline">
             <div className="inline-flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-xl shadow-primary/25">
-              <Presentation className="size-7" />
+              <KodexaLogoMark variant="onPrimary" className="size-10" />
             </div>
             <div>
-              <p className="text-2xl font-semibold text-foreground">
-                PPT<span className="text-primary">.ai</span>
+              <p className="text-2xl font-semibold">
+                <KodexaWordmark />
               </p>
               <p className="text-sm text-muted-foreground">AI Presentation Studio</p>
             </div>
@@ -140,11 +140,11 @@ function LoginPage() {
           <div className="text-center lg:hidden">
             <Link to="/" className="inline-flex items-center gap-2.5 no-underline">
               <div className="inline-flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
-                <Presentation className="size-5" />
+                <KodexaLogoMark variant="onPrimary" className="size-8" />
               </div>
             </Link>
-            <h1 className="mt-2 text-lg font-semibold text-foreground">
-              PPT<span className="text-primary">.ai</span>
+            <h1 className="mt-2 text-lg font-semibold">
+              <KodexaWordmark />
             </h1>
           </div>
 

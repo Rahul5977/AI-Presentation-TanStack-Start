@@ -143,9 +143,29 @@ model User {
   usageEvents   UsageEvent[]
   usageCounters UserUsageCounter[]
   deckPayments  DeckPayment[]
+  brandKits     BrandKit[]
 
   @@unique([email])
   @@map("user")
+}
+
+// A reusable brand theme owned by a user: a base template plus saved overrides
+// (colors, typography, logo). Selecting a BrandKit on a presentation copies its
+// overrides onto the deck, so edits to a deck never mutate the saved kit.
+model BrandKit {
+  id             String         @id @default(cuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String
+  baseTemplate   TemplateKind   @default(MINIMAL_MONO)
+  overrides      Json
+  logoUrl        String?
+  presentations  Presentation[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([userId, updatedAt(sort: Desc)])
+  @@map("brand_kit")
 }
 
 model Session {
@@ -243,6 +263,9 @@ model Presentation {
   brandLogoUrl     String?
   brandPrimaryColor String?
   brandAccentColor String?
+  themeOverrides   Json?
+  brandKitId       String?
+  brandKit         BrandKit?            @relation(fields: [brandKitId], references: [id], onDelete: SetNull)
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
   lastEditedAt     DateTime             @default(now())
@@ -294,6 +317,7 @@ model Draft {
   template       TemplateKind
   imageStyle     ImageStyle
   depth          DepthType
+  themeOverrides Json?
   slides         DraftSlide[]
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
@@ -312,6 +336,7 @@ model DraftSlide {
   bullets          Json
   visualConcept    String
   speakerNotesHint String?
+  slideData        Json?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -332,6 +357,7 @@ model Slide {
   visualConcept    String
   speakerNotes     String?
   layoutHints      Json?
+  slideData        Json?
   imagePrompt      String?
   imageAssetId     String?
   imageUrl         String?

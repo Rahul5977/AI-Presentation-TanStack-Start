@@ -1,5 +1,5 @@
+import { KodexaLogoMark, KodexaWordmark } from '@/components/brand/KodexaLogo'
 import { Link } from '@tanstack/react-router'
-import { Presentation } from 'lucide-react'
 
 const legalLinks = [
   { to: '/about-us', label: 'About Us' },
@@ -22,10 +22,10 @@ export default function Footer() {
           <div className="max-w-md space-y-3">
             <div className="inline-flex items-center gap-2.5">
               <span className="inline-flex size-10 items-center justify-center rounded-xl bg-primary/15 text-primary">
-                <Presentation className="size-5" />
+                <KodexaLogoMark className="size-7" />
               </span>
-              <p className="text-lg font-semibold text-foreground">
-                PPT<span className="text-primary">.ai</span>
+              <p className="text-lg font-semibold">
+                <KodexaWordmark />
               </p>
             </div>
             <p className="text-sm leading-6 text-muted-foreground">
@@ -56,7 +56,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-8 flex flex-col gap-2 border-t border-border/60 pt-4 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <p>© {year} PPT.ai · Built with ✨ by Rahul Raj</p>
+          <p>© {year} Kodexa.ai · Built with ✨ by Rahul Raj</p>
           <p>Powered by AI · Secured by Razorpay</p>
         </div>
       </div>

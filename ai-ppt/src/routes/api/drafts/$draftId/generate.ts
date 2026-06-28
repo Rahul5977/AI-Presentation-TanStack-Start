@@ -6,6 +6,7 @@ import { json } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 
 import { auth } from '@/lib/auth'
+import { Prisma } from '@/generated/prisma/client'
 import { logger } from '@/server/logging/logger'
 import { captureWebException } from '@/server/observability/sentry'
 import { prisma } from '@/lib/db'
@@ -150,9 +151,10 @@ export const Route = createFileRoute('/api/drafts/$draftId/generate')({
                 position: draftSlide.position,
                 title: draftSlide.title,
                 intent: draftSlide.intent,
-                bullets: draftSlide.bullets,
+                bullets: draftSlide.bullets ?? [],
                 visualConcept: draftSlide.visualConcept,
                 speakerNotes: draftSlide.speakerNotesHint,
+                slideData: draftSlide.slideData ?? Prisma.JsonNull,
               })),
             })
 

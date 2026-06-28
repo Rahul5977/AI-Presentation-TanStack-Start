@@ -1,10 +1,17 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
+import { z } from 'zod'
 
 import { auth } from '@/lib/auth'
 import { canAccessPresentation } from '@/server/presentations/access'
-import type { BrandKitDraft } from '@/server/presentations/v11-scaffold'
+import { applyPresentationTheme } from '@/server/presentations/theme-service'
+import { themeOverridesSchema } from '@/templates/theme'
+
+// Accept either a full overrides object, or `null` to reset to the base template.
+const payloadSchema = z.object({
+  themeOverrides: themeOverridesSchema.nullable(),
+})
 
 export const Route = createFileRoute('/api/presentations/$id/brand-kit')({
   server: {
@@ -17,19 +24,18 @@ export const Route = createFileRoute('/api/presentations/$id/brand-kit')({
         const canEdit = await canAccessPresentation(session.user.id, params.id, 'edit')
         if (!canEdit) return json({ error: 'Presentation not found' }, { status: 404 })
 
-        const body = (await request.json()) as BrandKitDraft
-        return json(
-          {
-            error:
-              'Brand kit controls are scaffolded for v1.1 and not enabled yet.',
-            received: {
-              hasLogo: Boolean(body.logoUrl),
-              hasPrimaryColor: Boolean(body.primaryColor),
-              hasAccentColor: Boolean(body.accentColor),
-            },
-          },
-          { status: 501 },
+        const parsed = payloadSchema.safeParse(await request.json())
+        if (!parsed.success) {
+          return json({ error: 'Invalid brand kit payload' }, { status: 400 })
+        }
+
+        const result = await applyPresentationTheme(
+          params.id,
+          parsed.data.themeOverrides,
         )
+        if (!result.ok) return json({ error: result.error }, { status: 400 })
+
+        return json({ themeOverrides: result.themeOverrides })
       },
     },
   },

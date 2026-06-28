@@ -7,8 +7,17 @@ import SlideRenderer from '@/components/slides/SlideRenderer'
 import EditableField from '@/components/editor/EditableField'
 import SlideRegenerateDialog from '@/components/editor/SlideRegenerateDialog'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { parseSlideData } from '@/lib/slide-data'
 import type { TemplateConfig } from '@/templates/schema'
 import {
   GripVertical,
@@ -18,6 +27,9 @@ import {
   ImagePlus,
   ChevronDown,
   ChevronUp,
+  BarChart3,
+  Loader2,
+  Sparkles,
 } from 'lucide-react'
 
 export type EditableSlide = {
@@ -29,6 +41,7 @@ export type EditableSlide = {
   visualConcept: string
   speakerNotes: string | null
   layoutHints: unknown
+  slideData: unknown
   imageUrl: string | null
   imagePrompt: string | null
   status: 'PENDING' | 'CONTENT_READY' | 'IMAGE_READY' | 'READY' | 'FAILED'
@@ -37,6 +50,7 @@ export type EditableSlide = {
 type SlideEditorCardProps = {
   slide: EditableSlide
   template: TemplateConfig
+  logoUrl?: string | null
   presentationTone?: string
   presentationDepth?: string
   presentationImageStyle?: string
@@ -51,7 +65,19 @@ type SlideEditorCardProps = {
   ) => Promise<void>
   onRegenImage: (slideId: string, overrides: { imageStyle?: string }) => Promise<void>
   onImageUpload: (slideId: string, file: File) => Promise<void>
+  onVisualize: (slideId: string, kind: VisualizeKind) => Promise<void>
+  onRemoveData: (slideId: string) => Promise<void>
+  onTextAction: (slideId: string, action: TextAction) => Promise<void>
 }
+
+export type VisualizeKind = 'auto' | 'chart' | 'table' | 'timeline' | 'metrics'
+export type TextAction = 'MAKE_SHORTER' | 'MORE_FORMAL' | 'ADD_STATISTIC'
+
+const textActionButtons: ReadonlyArray<{ action: TextAction; label: string }> = [
+  { action: 'MAKE_SHORTER', label: 'Shorter' },
+  { action: 'MORE_FORMAL', label: 'More formal' },
+  { action: 'ADD_STATISTIC', label: 'Add stat' },
+]
 
 const slideStatusLabel: Record<EditableSlide['status'], string> = {
   PENDING: 'Queued',
@@ -80,6 +106,7 @@ const imagePlacementOptions = [
 export default function SlideEditorCard({
   slide,
   template,
+  logoUrl,
   presentationTone,
   presentationDepth,
   presentationImageStyle,
@@ -90,10 +117,15 @@ export default function SlideEditorCard({
   onRegenContent,
   onRegenImage,
   onImageUpload,
+  onVisualize,
+  onRemoveData,
+  onTextAction,
 }: SlideEditorCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [isRegenOpen, setIsRegenOpen] = useState(false)
   const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [isVisualizing, setIsVisualizing] = useState(false)
+  const [textActionBusy, setTextActionBusy] = useState<TextAction | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
@@ -147,6 +179,41 @@ export default function SlideEditorCard({
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
+
+  const slideData = parseSlideData(slide.slideData)
+
+  const handleVisualize = useCallback(
+    async (kind: VisualizeKind) => {
+      setIsVisualizing(true)
+      try {
+        await onVisualize(slide.id, kind)
+      } finally {
+        setIsVisualizing(false)
+      }
+    },
+    [onVisualize, slide.id],
+  )
+
+  const handleRemoveData = useCallback(async () => {
+    setIsVisualizing(true)
+    try {
+      await onRemoveData(slide.id)
+    } finally {
+      setIsVisualizing(false)
+    }
+  }, [onRemoveData, slide.id])
+
+  const handleTextAction = useCallback(
+    async (action: TextAction) => {
+      setTextActionBusy(action)
+      try {
+        await onTextAction(slide.id, action)
+      } finally {
+        setTextActionBusy(null)
+      }
+    },
+    [onTextAction, slide.id],
+  )
 
   const handleDeleteConfirm = () => {
     const id = slide.id
@@ -240,6 +307,55 @@ export default function SlideEditorCard({
 
         {/* Actions */}
         <div className="flex shrink-0 items-center gap-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="icon"
+                variant="ghost"
+                className={cn(
+                  'size-7 text-muted-foreground',
+                  slideData && 'text-foreground',
+                )}
+                title="Visualize as chart / table / timeline"
+                disabled={isVisualizing}
+              >
+                {isVisualizing ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <BarChart3 size={14} />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Visualize with AI</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => void handleVisualize('auto')}>
+                Auto (let AI pick)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => void handleVisualize('chart')}>
+                Chart
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => void handleVisualize('table')}>
+                Table
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => void handleVisualize('timeline')}>
+                Timeline
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => void handleVisualize('metrics')}>
+                Metrics / KPIs
+              </DropdownMenuItem>
+              {slideData ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-red-500"
+                    onClick={() => void handleRemoveData()}
+                  >
+                    Remove data ({slideData.kind})
+                  </DropdownMenuItem>
+                </>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button
             size="icon"
             variant="ghost"
@@ -301,9 +417,11 @@ export default function SlideEditorCard({
             visualConcept: slide.visualConcept,
             speakerNotes: slide.speakerNotes,
             layoutHints: slide.layoutHints,
+            slideData: slide.slideData,
             imageUrl: slide.imageUrl,
           }}
           template={template}
+          logoUrl={logoUrl}
         />
       </div>
 
@@ -325,9 +443,32 @@ export default function SlideEditorCard({
 
           {/* Bullets */}
           <div>
-            <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Bullet points
-            </p>
+            <div className="mb-1.5 flex items-center justify-between gap-2">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Bullet points
+              </p>
+              {/* One-click AI text transforms */}
+              <div className="flex items-center gap-1">
+                <Sparkles size={11} className="text-muted-foreground/60" />
+                {textActionButtons.map(({ action, label }) => (
+                  <Button
+                    key={action}
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-2 text-xs"
+                    disabled={textActionBusy !== null || slide.bullets.length === 0}
+                    onClick={() => void handleTextAction(action)}
+                  >
+                    {textActionBusy === action ? (
+                      <Loader2 size={11} className="animate-spin" />
+                    ) : (
+                      label
+                    )}
+                  </Button>
+                ))}
+              </div>
+            </div>
             <ul className="space-y-1.5">
               {slide.bullets.map((bullet, i) => (
                 <li key={`${slide.id}-bullet-${i}`} className="flex items-start gap-2">

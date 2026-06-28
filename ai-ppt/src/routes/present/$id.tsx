@@ -1,7 +1,8 @@
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { AUTH_LOGIN_PATH } from '@/lib/auth-path'
 import { getSession } from '@/lib/auth-function'
-import { getTemplateByKind } from '@/templates/registry'
+import { resolveTemplate } from '@/templates/theme'
+import type { ThemeOverrides } from '@/templates/theme'
 import type { TemplateKind } from '@/templates/schema'
 import SlideRenderer from '@/components/slides/SlideRenderer'
 import { useEffect, useState, useCallback, useMemo } from 'react'
@@ -18,6 +19,7 @@ type PresentSlide = {
   visualConcept: string
   speakerNotes: string | null
   layoutHints: unknown
+  slideData: unknown
   imageUrl: string | null
 }
 
@@ -25,6 +27,7 @@ type PresentPresentation = {
   presentationId: string
   title: string
   template: TemplateKind
+  themeOverrides?: ThemeOverrides | null
   slides: PresentSlide[]
 }
 
@@ -119,10 +122,11 @@ function PresentModePage() {
     [presentation, currentIndex],
   )
 
-  const template = useMemo(
-    () => getTemplateByKind(presentation?.template ?? 'MINIMAL_MONO'),
-    [presentation?.template],
+  const resolved = useMemo(
+    () => resolveTemplate(presentation?.template ?? 'MINIMAL_MONO', presentation?.themeOverrides ?? null),
+    [presentation?.template, presentation?.themeOverrides],
   )
+  const template = resolved.template
 
   if (isLoading) {
     return (
@@ -193,7 +197,7 @@ function PresentModePage() {
           onClick={next}
           style={{ cursor: currentIndex < totalSlides - 1 ? 'pointer' : 'default' }}
         >
-          <SlideRenderer slide={currentSlide} template={template} />
+          <SlideRenderer slide={currentSlide} template={template} logoUrl={resolved.logoUrl} />
         </div>
 
         {/* Next arrow */}

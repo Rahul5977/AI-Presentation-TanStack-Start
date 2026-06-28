@@ -1,6 +1,8 @@
 import SlideCanvas from '@/components/slides/SlideCanvas'
+import SlideDataView from '@/components/slides/SlideData'
 import { resolveSlideVariant } from '@/components/slides/layout-map'
 import { cn } from '@/lib/utils'
+import { parseSlideData } from '@/lib/slide-data'
 import type { TemplateConfig } from '@/templates/schema'
 
 export type RenderableSlide = {
@@ -12,11 +14,13 @@ export type RenderableSlide = {
   speakerNotes?: string | null
   layoutHints?: unknown
   imageUrl?: string | null
+  slideData?: unknown
 }
 
 type SlideRendererProps = {
   slide: RenderableSlide
   template: TemplateConfig
+  logoUrl?: string | null
 }
 
 function normalizeBullets(input: unknown): string[] {
@@ -24,8 +28,9 @@ function normalizeBullets(input: unknown): string[] {
   return input.filter((item): item is string => typeof item === 'string').slice(0, 8)
 }
 
-export default function SlideRenderer({ slide, template }: SlideRendererProps) {
+export default function SlideRenderer({ slide, template, logoUrl }: SlideRendererProps) {
   const bullets = normalizeBullets(slide.bullets)
+  const slideData = parseSlideData(slide.slideData)
   const variantKey = resolveSlideVariant(slide.layoutHints, bullets.length)
   const variant = template.layouts[variantKey]
   const topImageLayout = variant.key === 'imageTop' || variant.key === 'title' || variant.key === 'sectionDivider' || variant.key === 'closing'
@@ -33,8 +38,45 @@ export default function SlideRenderer({ slide, template }: SlideRendererProps) {
     ? 'h-full min-h-36 max-h-72 rounded-2xl'
     : 'h-full min-h-44 rounded-xl'
 
+  // Rich data slides (chart / table / timeline / metrics) use a focused
+  // header + full-bleed data layout rather than the bullets/media grid.
+  if (slideData) {
+    return (
+      <SlideCanvas template={template} logoUrl={logoUrl}>
+        <div className="flex h-full flex-col gap-3">
+          <header className="space-y-1">
+            <h3
+              className="leading-tight"
+              style={{
+                fontFamily: 'var(--slide-font-display)',
+                fontSize: 'var(--slide-title-size)',
+                fontWeight: 'var(--slide-title-weight)',
+              }}
+            >
+              {slide.title}
+            </h3>
+            {slide.intent ? (
+              <p
+                className="text-(--slide-muted)"
+                style={{
+                  fontFamily: 'var(--slide-font-body)',
+                  fontSize: 'var(--slide-body-size)',
+                }}
+              >
+                {slide.intent}
+              </p>
+            ) : null}
+          </header>
+          <div className="min-h-0 flex-1">
+            <SlideDataView data={slideData} />
+          </div>
+        </div>
+      </SlideCanvas>
+    )
+  }
+
   return (
-    <SlideCanvas template={template}>
+    <SlideCanvas template={template} logoUrl={logoUrl}>
       <article
         className={cn('grid h-full gap-4', variant.containerClasses)}
         style={{

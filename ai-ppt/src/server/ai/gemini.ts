@@ -1,5 +1,10 @@
 import { GoogleGenAI, Type } from '@google/genai'
 import { outlineGenerationSchema, resolveSlideCount } from '@/server/presentations/schemas'
+import { VISUALIZE_SYSTEM_INSTRUCTION } from '@/server/ai/visualize-prompt'
+import { buildOutlineSystemInstruction } from '@/server/ai/outline-prompt'
+import { buildTextActionSystemInstruction } from '@/server/ai/text-action-prompt'
+import type { SlideVisualInput } from '@/server/ai/visualize-prompt'
+import type { TextActionInput } from '@/server/ai/text-action-prompt'
 import type { PresentationInput } from '@/server/presentations/schemas'
 
 let client: GoogleGenAI | null = null
@@ -20,18 +25,7 @@ export async function generateOutlineWithGemini(
   const ai = getClient()
   const targetSlides = resolveSlideCount(input)
 
-  const systemInstruction = `You generate concise, engaging presentation outlines.
-Return strict JSON only. Do not include markdown or explanation.
-The JSON must have:
-- title: short, compelling presentation title
-- slides: array of exactly ${targetSlides} slide objects
-
-Each slide object must include:
-- title: slide heading
-- intent: one sentence describing the slide's purpose
-- bullets: 2-6 concise bullet strings
-- visualConcept: description of the ideal image/visual for this slide
-- speakerNotesHint: optional brief note for the presenter (or null)`
+  const systemInstruction = buildOutlineSystemInstruction(input, targetSlides)
 
   const response = await ai.models.generateContent({
     model: textModel(),
@@ -140,4 +134,55 @@ Do not include markdown.`
   }
 
   return parsed
+}
+
+export async function generateSlideVisualWithGemini(
+  input: SlideVisualInput,
+): Promise<unknown> {
+  const ai = getClient()
+  const response = await ai.models.generateContent({
+    model: textModel(),
+    contents: JSON.stringify(input),
+    config: {
+      systemInstruction: VISUALIZE_SYSTEM_INSTRUCTION,
+      responseMimeType: 'application/json',
+    },
+  })
+  const text = response.text
+  if (!text) throw new Error('Gemini returned empty visual.')
+  return JSON.parse(text)
+}
+
+export async function applyTextActionWithGemini(
+  input: TextActionInput,
+): Promise<string[]> {
+  const ai = getClient()
+  const response = await ai.models.generateContent({
+    model: textModel(),
+    contents: JSON.stringify({ bullets: input.bullets, context: input.context }),
+    config: {
+      systemInstruction: buildTextActionSystemInstruction(input.action),
+      responseMimeType: 'application/json',
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          bullets: { type: Type.ARRAY, items: { type: Type.STRING } },
+        },
+        required: ['bullets'],
+      },
+    },
+  })
+  const text = response.text
+  if (!text) throw new Error('Gemini returned empty text action result.')
+  const parsed = JSON.parse(text) as { bullets?: unknown }
+  return normalizeBullets(parsed.bullets)
+}
+
+function normalizeBullets(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .filter((b): b is string => typeof b === 'string')
+    .map((b) => b.trim())
+    .filter((b) => b.length > 0)
+    .slice(0, 8)
 }

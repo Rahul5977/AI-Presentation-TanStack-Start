@@ -28,6 +28,7 @@ import { Route as ApiMetricsRouteImport } from './routes/api/metrics'
 import { Route as ApiDbHealthRouteImport } from './routes/api/db-health'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as ApiPresentationsIndexRouteImport } from './routes/api/presentations/index'
+import { Route as ApiBrandKitsIndexRouteImport } from './routes/api/brand-kits/index'
 import { Route as ApiShareTokenRouteImport } from './routes/api/share/$token'
 import { Route as ApiPresentationsOutlineRouteImport } from './routes/api/presentations/outline'
 import { Route as ApiPresentationsImportRouteImport } from './routes/api/presentations/import'
@@ -35,6 +36,7 @@ import { Route as ApiPresentationsHistoryRouteImport } from './routes/api/presen
 import { Route as ApiPaymentVerifyRouteImport } from './routes/api/payment/verify'
 import { Route as ApiPaymentCreateOrderRouteImport } from './routes/api/payment/create-order'
 import { Route as ApiHealthSystemRouteImport } from './routes/api/health/system'
+import { Route as ApiBrandKitsKitIdRouteImport } from './routes/api/brand-kits/$kitId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiAnalyticsSummaryRouteImport } from './routes/api/analytics/summary'
 import { Route as ApiPresentationsIdIndexRouteImport } from './routes/api/presentations/$id/index'
@@ -58,6 +60,7 @@ import { Route as ApiPresentationsIdSlidesReorderRouteImport } from './routes/ap
 import { Route as ApiDraftsDraftIdSlidesSlideIdRouteImport } from './routes/api/drafts/$draftId/slides/$slideId'
 import { Route as ApiPresentationsIdSlidesSlideIdIndexRouteImport } from './routes/api/presentations/$id/slides/$slideId/index'
 import { Route as ApiPresentationsIdVersionsVersionIdRestoreRouteImport } from './routes/api/presentations/$id/versions/$versionId/restore'
+import { Route as ApiPresentationsIdSlidesSlideIdVisualizeRouteImport } from './routes/api/presentations/$id/slides/$slideId/visualize'
 import { Route as ApiPresentationsIdSlidesSlideIdRegenerateRouteImport } from './routes/api/presentations/$id/slides/$slideId/regenerate'
 import { Route as ApiPresentationsIdSlidesSlideIdImageUploadRouteImport } from './routes/api/presentations/$id/slides/$slideId/image-upload'
 import { Route as ApiPresentationsIdSlidesSlideIdImageRegenerateRouteImport } from './routes/api/presentations/$id/slides/$slideId/image-regenerate'
@@ -159,6 +162,11 @@ const ApiPresentationsIndexRoute = ApiPresentationsIndexRouteImport.update({
   path: '/api/presentations/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBrandKitsIndexRoute = ApiBrandKitsIndexRouteImport.update({
+  id: '/api/brand-kits/',
+  path: '/api/brand-kits/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiShareTokenRoute = ApiShareTokenRouteImport.update({
   id: '/api/share/$token',
   path: '/api/share/$token',
@@ -192,6 +200,11 @@ const ApiPaymentCreateOrderRoute = ApiPaymentCreateOrderRouteImport.update({
 const ApiHealthSystemRoute = ApiHealthSystemRouteImport.update({
   id: '/api/health/system',
   path: '/api/health/system',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBrandKitsKitIdRoute = ApiBrandKitsKitIdRouteImport.update({
+  id: '/api/brand-kits/$kitId',
+  path: '/api/brand-kits/$kitId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -326,6 +339,12 @@ const ApiPresentationsIdVersionsVersionIdRestoreRoute =
     path: '/api/presentations/$id/versions/$versionId/restore',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPresentationsIdSlidesSlideIdVisualizeRoute =
+  ApiPresentationsIdSlidesSlideIdVisualizeRouteImport.update({
+    id: '/api/presentations/$id/slides/$slideId/visualize',
+    path: '/api/presentations/$id/slides/$slideId/visualize',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPresentationsIdSlidesSlideIdRegenerateRoute =
   ApiPresentationsIdSlidesSlideIdRegenerateRouteImport.update({
     id: '/api/presentations/$id/slides/$slideId/regenerate',
@@ -377,6 +396,7 @@ export interface FileRoutesByFullPath {
   '/share/$token': typeof ShareTokenRoute
   '/api/analytics/summary': typeof ApiAnalyticsSummaryRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/brand-kits/$kitId': typeof ApiBrandKitsKitIdRoute
   '/api/health/system': typeof ApiHealthSystemRoute
   '/api/payment/create-order': typeof ApiPaymentCreateOrderRoute
   '/api/payment/verify': typeof ApiPaymentVerifyRoute
@@ -384,6 +404,7 @@ export interface FileRoutesByFullPath {
   '/api/presentations/import': typeof ApiPresentationsImportRoute
   '/api/presentations/outline': typeof ApiPresentationsOutlineRoute
   '/api/share/$token': typeof ApiShareTokenRoute
+  '/api/brand-kits/': typeof ApiBrandKitsIndexRoute
   '/api/presentations/': typeof ApiPresentationsIndexRoute
   '/api/drafts/$draftId/generate': typeof ApiDraftsDraftIdGenerateRoute
   '/api/drafts/$draftId/regenerate': typeof ApiDraftsDraftIdRegenerateRoute
@@ -409,6 +430,7 @@ export interface FileRoutesByFullPath {
   '/api/presentations/$id/slides/$slideId/image-regenerate': typeof ApiPresentationsIdSlidesSlideIdImageRegenerateRoute
   '/api/presentations/$id/slides/$slideId/image-upload': typeof ApiPresentationsIdSlidesSlideIdImageUploadRoute
   '/api/presentations/$id/slides/$slideId/regenerate': typeof ApiPresentationsIdSlidesSlideIdRegenerateRoute
+  '/api/presentations/$id/slides/$slideId/visualize': typeof ApiPresentationsIdSlidesSlideIdVisualizeRoute
   '/api/presentations/$id/versions/$versionId/restore': typeof ApiPresentationsIdVersionsVersionIdRestoreRoute
   '/api/presentations/$id/slides/$slideId/': typeof ApiPresentationsIdSlidesSlideIdIndexRoute
 }
@@ -432,6 +454,7 @@ export interface FileRoutesByTo {
   '/share/$token': typeof ShareTokenRoute
   '/api/analytics/summary': typeof ApiAnalyticsSummaryRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/brand-kits/$kitId': typeof ApiBrandKitsKitIdRoute
   '/api/health/system': typeof ApiHealthSystemRoute
   '/api/payment/create-order': typeof ApiPaymentCreateOrderRoute
   '/api/payment/verify': typeof ApiPaymentVerifyRoute
@@ -439,6 +462,7 @@ export interface FileRoutesByTo {
   '/api/presentations/import': typeof ApiPresentationsImportRoute
   '/api/presentations/outline': typeof ApiPresentationsOutlineRoute
   '/api/share/$token': typeof ApiShareTokenRoute
+  '/api/brand-kits': typeof ApiBrandKitsIndexRoute
   '/api/presentations': typeof ApiPresentationsIndexRoute
   '/api/drafts/$draftId/generate': typeof ApiDraftsDraftIdGenerateRoute
   '/api/drafts/$draftId/regenerate': typeof ApiDraftsDraftIdRegenerateRoute
@@ -464,6 +488,7 @@ export interface FileRoutesByTo {
   '/api/presentations/$id/slides/$slideId/image-regenerate': typeof ApiPresentationsIdSlidesSlideIdImageRegenerateRoute
   '/api/presentations/$id/slides/$slideId/image-upload': typeof ApiPresentationsIdSlidesSlideIdImageUploadRoute
   '/api/presentations/$id/slides/$slideId/regenerate': typeof ApiPresentationsIdSlidesSlideIdRegenerateRoute
+  '/api/presentations/$id/slides/$slideId/visualize': typeof ApiPresentationsIdSlidesSlideIdVisualizeRoute
   '/api/presentations/$id/versions/$versionId/restore': typeof ApiPresentationsIdVersionsVersionIdRestoreRoute
   '/api/presentations/$id/slides/$slideId': typeof ApiPresentationsIdSlidesSlideIdIndexRoute
 }
@@ -489,6 +514,7 @@ export interface FileRoutesById {
   '/share/$token': typeof ShareTokenRoute
   '/api/analytics/summary': typeof ApiAnalyticsSummaryRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/brand-kits/$kitId': typeof ApiBrandKitsKitIdRoute
   '/api/health/system': typeof ApiHealthSystemRoute
   '/api/payment/create-order': typeof ApiPaymentCreateOrderRoute
   '/api/payment/verify': typeof ApiPaymentVerifyRoute
@@ -496,6 +522,7 @@ export interface FileRoutesById {
   '/api/presentations/import': typeof ApiPresentationsImportRoute
   '/api/presentations/outline': typeof ApiPresentationsOutlineRoute
   '/api/share/$token': typeof ApiShareTokenRoute
+  '/api/brand-kits/': typeof ApiBrandKitsIndexRoute
   '/api/presentations/': typeof ApiPresentationsIndexRoute
   '/api/drafts/$draftId/generate': typeof ApiDraftsDraftIdGenerateRoute
   '/api/drafts/$draftId/regenerate': typeof ApiDraftsDraftIdRegenerateRoute
@@ -521,6 +548,7 @@ export interface FileRoutesById {
   '/api/presentations/$id/slides/$slideId/image-regenerate': typeof ApiPresentationsIdSlidesSlideIdImageRegenerateRoute
   '/api/presentations/$id/slides/$slideId/image-upload': typeof ApiPresentationsIdSlidesSlideIdImageUploadRoute
   '/api/presentations/$id/slides/$slideId/regenerate': typeof ApiPresentationsIdSlidesSlideIdRegenerateRoute
+  '/api/presentations/$id/slides/$slideId/visualize': typeof ApiPresentationsIdSlidesSlideIdVisualizeRoute
   '/api/presentations/$id/versions/$versionId/restore': typeof ApiPresentationsIdVersionsVersionIdRestoreRoute
   '/api/presentations/$id/slides/$slideId/': typeof ApiPresentationsIdSlidesSlideIdIndexRoute
 }
@@ -546,6 +574,7 @@ export interface FileRouteTypes {
     | '/share/$token'
     | '/api/analytics/summary'
     | '/api/auth/$'
+    | '/api/brand-kits/$kitId'
     | '/api/health/system'
     | '/api/payment/create-order'
     | '/api/payment/verify'
@@ -553,6 +582,7 @@ export interface FileRouteTypes {
     | '/api/presentations/import'
     | '/api/presentations/outline'
     | '/api/share/$token'
+    | '/api/brand-kits/'
     | '/api/presentations/'
     | '/api/drafts/$draftId/generate'
     | '/api/drafts/$draftId/regenerate'
@@ -578,6 +608,7 @@ export interface FileRouteTypes {
     | '/api/presentations/$id/slides/$slideId/image-regenerate'
     | '/api/presentations/$id/slides/$slideId/image-upload'
     | '/api/presentations/$id/slides/$slideId/regenerate'
+    | '/api/presentations/$id/slides/$slideId/visualize'
     | '/api/presentations/$id/versions/$versionId/restore'
     | '/api/presentations/$id/slides/$slideId/'
   fileRoutesByTo: FileRoutesByTo
@@ -601,6 +632,7 @@ export interface FileRouteTypes {
     | '/share/$token'
     | '/api/analytics/summary'
     | '/api/auth/$'
+    | '/api/brand-kits/$kitId'
     | '/api/health/system'
     | '/api/payment/create-order'
     | '/api/payment/verify'
@@ -608,6 +640,7 @@ export interface FileRouteTypes {
     | '/api/presentations/import'
     | '/api/presentations/outline'
     | '/api/share/$token'
+    | '/api/brand-kits'
     | '/api/presentations'
     | '/api/drafts/$draftId/generate'
     | '/api/drafts/$draftId/regenerate'
@@ -633,6 +666,7 @@ export interface FileRouteTypes {
     | '/api/presentations/$id/slides/$slideId/image-regenerate'
     | '/api/presentations/$id/slides/$slideId/image-upload'
     | '/api/presentations/$id/slides/$slideId/regenerate'
+    | '/api/presentations/$id/slides/$slideId/visualize'
     | '/api/presentations/$id/versions/$versionId/restore'
     | '/api/presentations/$id/slides/$slideId'
   id:
@@ -657,6 +691,7 @@ export interface FileRouteTypes {
     | '/share/$token'
     | '/api/analytics/summary'
     | '/api/auth/$'
+    | '/api/brand-kits/$kitId'
     | '/api/health/system'
     | '/api/payment/create-order'
     | '/api/payment/verify'
@@ -664,6 +699,7 @@ export interface FileRouteTypes {
     | '/api/presentations/import'
     | '/api/presentations/outline'
     | '/api/share/$token'
+    | '/api/brand-kits/'
     | '/api/presentations/'
     | '/api/drafts/$draftId/generate'
     | '/api/drafts/$draftId/regenerate'
@@ -689,6 +725,7 @@ export interface FileRouteTypes {
     | '/api/presentations/$id/slides/$slideId/image-regenerate'
     | '/api/presentations/$id/slides/$slideId/image-upload'
     | '/api/presentations/$id/slides/$slideId/regenerate'
+    | '/api/presentations/$id/slides/$slideId/visualize'
     | '/api/presentations/$id/versions/$versionId/restore'
     | '/api/presentations/$id/slides/$slideId/'
   fileRoutesById: FileRoutesById
@@ -713,6 +750,7 @@ export interface RootRouteChildren {
   ShareTokenRoute: typeof ShareTokenRoute
   ApiAnalyticsSummaryRoute: typeof ApiAnalyticsSummaryRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiBrandKitsKitIdRoute: typeof ApiBrandKitsKitIdRoute
   ApiHealthSystemRoute: typeof ApiHealthSystemRoute
   ApiPaymentCreateOrderRoute: typeof ApiPaymentCreateOrderRoute
   ApiPaymentVerifyRoute: typeof ApiPaymentVerifyRoute
@@ -720,6 +758,7 @@ export interface RootRouteChildren {
   ApiPresentationsImportRoute: typeof ApiPresentationsImportRoute
   ApiPresentationsOutlineRoute: typeof ApiPresentationsOutlineRoute
   ApiShareTokenRoute: typeof ApiShareTokenRoute
+  ApiBrandKitsIndexRoute: typeof ApiBrandKitsIndexRoute
   ApiPresentationsIndexRoute: typeof ApiPresentationsIndexRoute
   ApiDraftsDraftIdGenerateRoute: typeof ApiDraftsDraftIdGenerateRoute
   ApiDraftsDraftIdRegenerateRoute: typeof ApiDraftsDraftIdRegenerateRoute
@@ -745,6 +784,7 @@ export interface RootRouteChildren {
   ApiPresentationsIdSlidesSlideIdImageRegenerateRoute: typeof ApiPresentationsIdSlidesSlideIdImageRegenerateRoute
   ApiPresentationsIdSlidesSlideIdImageUploadRoute: typeof ApiPresentationsIdSlidesSlideIdImageUploadRoute
   ApiPresentationsIdSlidesSlideIdRegenerateRoute: typeof ApiPresentationsIdSlidesSlideIdRegenerateRoute
+  ApiPresentationsIdSlidesSlideIdVisualizeRoute: typeof ApiPresentationsIdSlidesSlideIdVisualizeRoute
   ApiPresentationsIdVersionsVersionIdRestoreRoute: typeof ApiPresentationsIdVersionsVersionIdRestoreRoute
   ApiPresentationsIdSlidesSlideIdIndexRoute: typeof ApiPresentationsIdSlidesSlideIdIndexRoute
 }
@@ -884,6 +924,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPresentationsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/brand-kits/': {
+      id: '/api/brand-kits/'
+      path: '/api/brand-kits'
+      fullPath: '/api/brand-kits/'
+      preLoaderRoute: typeof ApiBrandKitsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/share/$token': {
       id: '/api/share/$token'
       path: '/api/share/$token'
@@ -931,6 +978,13 @@ declare module '@tanstack/react-router' {
       path: '/api/health/system'
       fullPath: '/api/health/system'
       preLoaderRoute: typeof ApiHealthSystemRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/brand-kits/$kitId': {
+      id: '/api/brand-kits/$kitId'
+      path: '/api/brand-kits/$kitId'
+      fullPath: '/api/brand-kits/$kitId'
+      preLoaderRoute: typeof ApiBrandKitsKitIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
@@ -1094,6 +1148,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPresentationsIdVersionsVersionIdRestoreRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/presentations/$id/slides/$slideId/visualize': {
+      id: '/api/presentations/$id/slides/$slideId/visualize'
+      path: '/api/presentations/$id/slides/$slideId/visualize'
+      fullPath: '/api/presentations/$id/slides/$slideId/visualize'
+      preLoaderRoute: typeof ApiPresentationsIdSlidesSlideIdVisualizeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/presentations/$id/slides/$slideId/regenerate': {
       id: '/api/presentations/$id/slides/$slideId/regenerate'
       path: '/api/presentations/$id/slides/$slideId/regenerate'
@@ -1164,6 +1225,7 @@ const rootRouteChildren: RootRouteChildren = {
   ShareTokenRoute: ShareTokenRoute,
   ApiAnalyticsSummaryRoute: ApiAnalyticsSummaryRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiBrandKitsKitIdRoute: ApiBrandKitsKitIdRoute,
   ApiHealthSystemRoute: ApiHealthSystemRoute,
   ApiPaymentCreateOrderRoute: ApiPaymentCreateOrderRoute,
   ApiPaymentVerifyRoute: ApiPaymentVerifyRoute,
@@ -1171,6 +1233,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPresentationsImportRoute: ApiPresentationsImportRoute,
   ApiPresentationsOutlineRoute: ApiPresentationsOutlineRoute,
   ApiShareTokenRoute: ApiShareTokenRoute,
+  ApiBrandKitsIndexRoute: ApiBrandKitsIndexRoute,
   ApiPresentationsIndexRoute: ApiPresentationsIndexRoute,
   ApiDraftsDraftIdGenerateRoute: ApiDraftsDraftIdGenerateRoute,
   ApiDraftsDraftIdRegenerateRoute: ApiDraftsDraftIdRegenerateRoute,
@@ -1201,6 +1264,8 @@ const rootRouteChildren: RootRouteChildren = {
     ApiPresentationsIdSlidesSlideIdImageUploadRoute,
   ApiPresentationsIdSlidesSlideIdRegenerateRoute:
     ApiPresentationsIdSlidesSlideIdRegenerateRoute,
+  ApiPresentationsIdSlidesSlideIdVisualizeRoute:
+    ApiPresentationsIdSlidesSlideIdVisualizeRoute,
   ApiPresentationsIdVersionsVersionIdRestoreRoute:
     ApiPresentationsIdVersionsVersionIdRestoreRoute,
   ApiPresentationsIdSlidesSlideIdIndexRoute:

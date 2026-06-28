@@ -12,12 +12,12 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 import { Link, useRouter } from '@tanstack/react-router'
+import { KodexaLogoMark, KodexaWordmark } from '@/components/brand/KodexaLogo'
 import {
   BarChart3,
   ChevronDown,
   LogOut,
   Menu,
-  Presentation,
   Sparkles,
   User,
 } from 'lucide-react'
@@ -68,14 +68,12 @@ export default function Navbar() {
           )}
         >
           <div className="flex items-center justify-between gap-3">
-            <Link to="/" className="inline-flex items-center gap-2.5 no-underline">
+            <Link to="/" className="inline-flex items-center gap-2.5 no-underline" aria-label="Kodexa.ai home">
               <div className="inline-flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/25">
-                <Presentation className="size-5" />
+                <KodexaLogoMark variant="onPrimary" className="size-7" />
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-base font-semibold leading-none text-foreground">
-                  PPT<span className="text-primary">.ai</span>
-                </span>
+                <KodexaWordmark className="text-base leading-none" />
                 <span className="hidden items-center gap-1 rounded-full border border-primary/30 bg-primary/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary md:inline-flex">
                   <Sparkles className="size-3" />
                   Beta

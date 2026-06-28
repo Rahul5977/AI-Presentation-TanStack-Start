@@ -27,14 +27,15 @@ export async function generateSlideContent(input: {
     input: [
       {
         role: 'system',
-        content: `Return strict JSON with:
-- title
-- intent
-- bullets (3-6 concise strings)
-- speakerNotes
-- layoutHints (object with type + emphasis)
-- imagePrompt
-Keep language, tone and depth aligned to user settings.`,
+        content: `You are an expert presentation writer polishing a single slide into its
+strongest final form. Stay on-topic for the slide's title and intent. Return strict JSON with:
+- title: sharp and specific (no generic "Introduction"/"Overview")
+- intent: one-sentence key takeaway
+- bullets (3-6): parallel, concrete, scannable single lines; prefer specifics over vague claims
+- speakerNotes: 2-4 sentences that ADD context (a why, an example, a transition), not a restatement
+- layoutHints (object with layoutType: title|content|twoColumn|imageLeft|quote|stats|sectionDivider|closing, and emphasis: primary|secondary|balanced) chosen to fit the content
+- imagePrompt: a vivid, specific visual prompt (subject, style, mood; no text)
+Write ALL text in the user's language; match the requested tone and depth.`,
       },
       {
         role: 'user',
