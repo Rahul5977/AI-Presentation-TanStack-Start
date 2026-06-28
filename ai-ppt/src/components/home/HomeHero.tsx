@@ -71,7 +71,7 @@ export default function HomeHero({ firstName }: HomeHeroProps) {
         </p>
         <p className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-emerald-500">
           <span className="size-2 rounded-full bg-emerald-500" />
-          First deck free · ₹20 per additional deck
+          Free to start · Upgrade to Pro for more
         </p>
 
         <div className="mt-7 grid gap-3 sm:grid-cols-3">

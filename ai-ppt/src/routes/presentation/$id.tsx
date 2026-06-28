@@ -329,7 +329,20 @@ function PresentationProgressPage() {
           body: JSON.stringify(overrides),
         },
       )
-      if (!res.ok) { toast.error('Could not queue image regeneration.'); return }
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as {
+          error?: string
+          upgradeRequired?: boolean
+        }
+        if (res.status === 403 && body.upgradeRequired) {
+          toast.error(body.error ?? 'AI image regeneration is a Pro feature.', {
+            action: { label: 'Upgrade', onClick: () => void navigate({ to: '/pricing' as never }) },
+          })
+          return
+        }
+        toast.error('Could not queue image regeneration.')
+        return
+      }
       setPresentation((cur) =>
         cur
           ? {
@@ -355,8 +368,18 @@ function PresentationProgressPage() {
           body: JSON.stringify({ kind }),
         },
       )
-      const data = (await res.json()) as { slideData?: unknown; error?: string }
+      const data = (await res.json()) as {
+        slideData?: unknown
+        error?: string
+        upgradeRequired?: boolean
+      }
       if (!res.ok) {
+        if (res.status === 403 && data.upgradeRequired) {
+          toast.error(data.error ?? 'Visualize is a Pro feature.', {
+            action: { label: 'Upgrade', onClick: () => void navigate({ to: '/pricing' as never }) },
+          })
+          return
+        }
         toast.error(data.error ?? 'Could not generate visual.')
         return
       }
@@ -596,15 +619,6 @@ function PresentationProgressPage() {
                 <Button size="sm" variant="ghost" onClick={() => setShowVersions(true)}>
                   <History size={14} className="mr-1.5" />
                   History
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() =>
-                    toast.info('Citation mode persistence is ready; full cited rendering ships in v1.1.')
-                  }
-                >
-                  Citation mode (v1.1)
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => setShowTheme(true)}>
                   <Palette size={14} className="mr-1.5" />

@@ -33,7 +33,7 @@ export default function Footer() {
             </p>
             <p className="inline-flex items-center gap-2 text-xs text-emerald-500">
               <span className="size-2 rounded-full bg-emerald-500" />
-              First deck free · ₹20 per deck
+              Free to start · Pro from $9/mo
             </p>
           </div>
 

@@ -1,6 +1,7 @@
 import { authClient } from '#/lib/auth-client'
 import ThemePicker from '@/components/ThemePicker'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -40,6 +41,24 @@ export default function Navbar() {
   const router = useRouter()
   const { data: session, isPending } = authClient.useSession()
   const [scrolled, setScrolled] = useState(false)
+  const [plan, setPlan] = useState<'FREE' | 'PRO' | null>(null)
+
+  useEffect(() => {
+    if (!session?.user) {
+      setPlan(null)
+      return
+    }
+    let cancelled = false
+    fetch('/api/billing/me', { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!cancelled && d?.plan) setPlan(d.plan)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [session?.user])
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12)
@@ -151,7 +170,14 @@ export default function Navbar() {
                   <DropdownMenuContent align="end" className="glass w-56 rounded-2xl border-border/70">
                     <DropdownMenuLabel className="font-normal">
                       <div className="flex flex-col gap-1">
-                        <p className="text-sm font-medium text-foreground">{session.user.name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium text-foreground">{session.user.name}</p>
+                          {plan ? (
+                            <Badge variant={plan === 'PRO' ? 'default' : 'secondary'} className="text-[10px]">
+                              {plan === 'PRO' ? 'Pro' : 'Free'}
+                            </Badge>
+                          ) : null}
+                        </div>
                         <p className="truncate text-xs text-muted-foreground">{session.user.email}</p>
                       </div>
                     </DropdownMenuLabel>
@@ -159,7 +185,7 @@ export default function Navbar() {
                     <DropdownMenuItem asChild className="cursor-pointer">
                       <Link to="/pricing" className="inline-flex w-full items-center">
                         <Sparkles className="mr-2 size-4 text-primary" />
-                        Billing & plan
+                        {plan === 'PRO' ? 'Billing & plan' : 'Upgrade to Pro'}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
