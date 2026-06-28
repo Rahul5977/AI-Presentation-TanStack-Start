@@ -21,6 +21,9 @@ type SlideRendererProps = {
   slide: RenderableSlide
   template: TemplateConfig
   logoUrl?: string | null
+  /** Optional deck position for cover/closing-aware adaptive layout. */
+  position?: number
+  total?: number
 }
 
 function normalizeBullets(input: unknown): string[] {
@@ -28,10 +31,23 @@ function normalizeBullets(input: unknown): string[] {
   return input.filter((item): item is string => typeof item === 'string').slice(0, 8)
 }
 
-export default function SlideRenderer({ slide, template, logoUrl }: SlideRendererProps) {
+export default function SlideRenderer({
+  slide,
+  template,
+  logoUrl,
+  position,
+  total,
+}: SlideRendererProps) {
   const bullets = normalizeBullets(slide.bullets)
   const slideData = parseSlideData(slide.slideData)
-  const variantKey = resolveSlideVariant(slide.layoutHints, bullets.length)
+  const variantKey = resolveSlideVariant({
+    layoutHints: slide.layoutHints,
+    bulletsCount: bullets.length,
+    hasImage: Boolean(slide.imageUrl),
+    hasData: Boolean(slideData),
+    position,
+    total,
+  })
   const variant = template.layouts[variantKey]
   const topImageLayout = variant.key === 'imageTop' || variant.key === 'title' || variant.key === 'sectionDivider' || variant.key === 'closing'
   const mediaFrameClass = topImageLayout

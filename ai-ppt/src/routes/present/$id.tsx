@@ -219,7 +219,13 @@ function PresentModePage() {
           onClick={next}
           style={{ cursor: currentIndex < totalSlides - 1 ? 'pointer' : 'default' }}
         >
-          <SlideRenderer slide={currentSlide} template={template} logoUrl={resolved.logoUrl} />
+          <SlideRenderer
+            slide={currentSlide}
+            template={template}
+            logoUrl={resolved.logoUrl}
+            position={currentIndex}
+            total={totalSlides}
+          />
         </div>
 
         {/* Next arrow */}

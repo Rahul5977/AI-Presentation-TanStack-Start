@@ -132,7 +132,13 @@ function SharePage() {
         </button>
 
         <div className="w-full max-w-5xl">
-          <SlideRenderer slide={currentSlide} template={template} logoUrl={resolved.logoUrl} />
+          <SlideRenderer
+            slide={currentSlide}
+            template={template}
+            logoUrl={resolved.logoUrl}
+            position={currentIndex}
+            total={totalSlides}
+          />
         </div>
 
         <button
