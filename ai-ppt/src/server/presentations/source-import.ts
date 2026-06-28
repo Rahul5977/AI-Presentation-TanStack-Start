@@ -1,3 +1,5 @@
+import { safeFetchText, UnsafeUrlError } from '@/server/net/safe-fetch'
+
 const MAX_SOURCE_CHARS = 24_000
 
 function truncate(text: string, max = MAX_SOURCE_CHARS) {
@@ -38,15 +40,16 @@ export async function extractImportSource(input: ImportSourceInput): Promise<{
   }
 
   if (input.mode === 'url') {
-    const response = await fetch(input.url, {
-      headers: {
-        'user-agent': 'Mozilla/5.0 (compatible; KodexaAIImporter/1.0)',
-      },
-    })
-    if (!response.ok) {
+    let html: string
+    try {
+      html = await safeFetchText(input.url)
+    } catch (error) {
+      if (error instanceof UnsafeUrlError) {
+        // Surface a clear, safe message; never leak internal network details.
+        throw new Error(error.message)
+      }
       throw new Error('Could not fetch the source URL.')
     }
-    const html = await response.text()
     const sourceText = truncate(htmlToText(html))
     if (!sourceText) {
       throw new Error('No readable text found at that URL.')

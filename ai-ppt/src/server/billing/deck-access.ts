@@ -2,18 +2,23 @@ import { prisma } from '@/lib/db'
 
 export const DECK_PRICE_INR = 20
 
+/**
+ * Owner accounts that bypass deck-payment gating, configured via the
+ * OWNER_EMAILS env var (comma-separated). Empty by default.
+ *
+ * SECURITY: never match on the OAuth display `name` — it is user-controllable,
+ * so any account could rename itself to obtain a free bypass. Match on the
+ * verified email only.
+ */
 const OWNER_EMAILS = new Set(
-  ['rahul.raj9237@gmail.com'].map((value) => value.trim().toLowerCase()),
-)
-
-/** Display names from OAuth (GitHub/Google `name`), not GitHub login — include common variants. */
-const OWNER_DISPLAY_NAMES = new Set(
-  ['Rahul5977', 'rahul raj', 'rahulraj', 'Rahul Raj'].map((value) => value.trim().toLowerCase()),
+  (process.env.OWNER_EMAILS ?? '')
+    .split(',')
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean),
 )
 
 type UserIdentity = {
   email: string
-  name: string
 }
 
 export class DeckPaymentRequiredError extends Error {
@@ -31,9 +36,8 @@ function normalize(value: string | null | undefined): string {
 }
 
 export function isOwnerAccount(user: UserIdentity): boolean {
-  const email = normalize(user.email)
-  const name = normalize(user.name)
-  return OWNER_EMAILS.has(email) || OWNER_DISPLAY_NAMES.has(name)
+  if (OWNER_EMAILS.size === 0) return false
+  return OWNER_EMAILS.has(normalize(user.email))
 }
 
 async function getPaidDeckCredits(userId: string): Promise<number> {
@@ -47,7 +51,7 @@ async function getPaidDeckCredits(userId: string): Promise<number> {
 export async function assertDeckCreationAllowed(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { email: true, name: true },
+    select: { email: true },
   })
   if (!user) throw new Error('User not found.')
 

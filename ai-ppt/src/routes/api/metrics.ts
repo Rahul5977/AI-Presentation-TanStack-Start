@@ -8,7 +8,11 @@ import { captureWebException } from '@/server/observability/sentry'
 
 function requireMetricsToken(request: Request) {
   const expected = process.env.METRICS_TOKEN
-  if (!expected) return true
+  if (!expected) {
+    // Fail CLOSED in production: an unset token must not expose queue/job stats
+    // publicly. Allow open access only outside production (local dev).
+    return process.env.NODE_ENV !== 'production'
+  }
 
   const authHeader = request.headers.get('authorization')
   if (authHeader?.trim() === `Bearer ${expected}`) return true
