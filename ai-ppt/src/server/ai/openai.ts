@@ -11,6 +11,7 @@ import { buildOutlineSystemInstruction } from '@/server/ai/outline-prompt'
 import { buildTextActionSystemInstruction } from '@/server/ai/text-action-prompt'
 import type { SlideVisualInput } from '@/server/ai/visualize-prompt'
 import type { TextActionInput } from '@/server/ai/text-action-prompt'
+import type { SlideAssistantInput, SlideAssistantResult } from '@/server/ai/gemini'
 import type {
   OutlineSlideInput,
   PresentationInput,
@@ -132,59 +133,141 @@ export async function generateOutlineWithOpenAI(
 
 export async function generateSlideVisualWithOpenAI(
   input: SlideVisualInput,
-): Promise<unknown> {
+  opts: { model?: string; signal?: AbortSignal } = {},
+): Promise<{ value: unknown; usage: TokenUsage }> {
   const client = getOpenAIClient()
 
-  const response = await client.responses.create({
-    model: getOutlineModel(),
-    input: [
-      { role: 'system', content: VISUALIZE_SYSTEM_INSTRUCTION },
-      { role: 'user', content: JSON.stringify(input) },
-    ],
-    text: { format: { type: 'json_object' } },
-  })
+  const response = await client.responses.create(
+    {
+      model: opts.model ?? getOutlineModel(),
+      input: [
+        { role: 'system', content: VISUALIZE_SYSTEM_INSTRUCTION },
+        { role: 'user', content: JSON.stringify(input) },
+      ],
+      text: { format: { type: 'json_object' } },
+    },
+    { signal: opts.signal },
+  )
 
   const content = response.output_text
   if (!content) throw new Error('OpenAI returned empty visual.')
-  return JSON.parse(content)
+  return {
+    value: JSON.parse(content),
+    usage: {
+      inputTokens: response.usage?.input_tokens,
+      outputTokens: response.usage?.output_tokens,
+    },
+  }
 }
 
 export async function applyTextActionWithOpenAI(
   input: TextActionInput,
-): Promise<string[]> {
+  opts: { model?: string; signal?: AbortSignal } = {},
+): Promise<{ value: string[]; usage: TokenUsage }> {
   const client = getOpenAIClient()
-  const response = await client.responses.create({
-    model: getOutlineModel(),
-    input: [
-      { role: 'system', content: buildTextActionSystemInstruction(input.action) },
-      {
-        role: 'user',
-        content: JSON.stringify({ bullets: input.bullets, context: input.context }),
-      },
-    ],
-    text: {
-      format: {
-        type: 'json_schema',
-        name: 'text_action',
-        strict: true,
-        schema: {
-          type: 'object',
-          additionalProperties: false,
-          required: ['bullets'],
-          properties: {
-            bullets: { type: 'array', items: { type: 'string' } },
+  const response = await client.responses.create(
+    {
+      model: opts.model ?? getOutlineModel(),
+      input: [
+        { role: 'system', content: buildTextActionSystemInstruction(input.action) },
+        {
+          role: 'user',
+          content: JSON.stringify({ bullets: input.bullets, context: input.context }),
+        },
+      ],
+      text: {
+        format: {
+          type: 'json_schema',
+          name: 'text_action',
+          strict: true,
+          schema: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['bullets'],
+            properties: {
+              bullets: { type: 'array', items: { type: 'string' } },
+            },
           },
         },
       },
     },
-  })
+    { signal: opts.signal },
+  )
   const content = response.output_text
   if (!content) throw new Error('OpenAI returned empty text action result.')
   const parsed = JSON.parse(content) as { bullets?: unknown }
-  if (!Array.isArray(parsed.bullets)) return []
-  return parsed.bullets
-    .filter((b): b is string => typeof b === 'string')
-    .map((b) => b.trim())
-    .filter((b) => b.length > 0)
-    .slice(0, 8)
+  const bullets = Array.isArray(parsed.bullets)
+    ? parsed.bullets
+        .filter((b): b is string => typeof b === 'string')
+        .map((b) => b.trim())
+        .filter((b) => b.length > 0)
+        .slice(0, 8)
+    : []
+  return {
+    value: bullets,
+    usage: {
+      inputTokens: response.usage?.input_tokens,
+      outputTokens: response.usage?.output_tokens,
+    },
+  }
+}
+
+export async function improveSlideWithOpenAI(
+  input: SlideAssistantInput,
+  opts: { model?: string; signal?: AbortSignal } = {},
+): Promise<{ value: SlideAssistantResult; usage: TokenUsage }> {
+  const client = getOpenAIClient()
+  const response = await client.responses.create(
+    {
+      model: opts.model ?? getOutlineModel(),
+      input: [
+        {
+          role: 'system',
+          content: `You are an expert presentation editor. Revise one slide according to the user
+instruction. Return strict JSON with: summary (one sentence describing what changed), title,
+intent, bullets (2-8 items), speakerNotes. No markdown.`,
+        },
+        { role: 'user', content: JSON.stringify(input) },
+      ],
+      text: {
+        format: {
+          type: 'json_schema',
+          name: 'slide_assistant',
+          strict: true,
+          schema: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['summary', 'title', 'intent', 'bullets', 'speakerNotes'],
+            properties: {
+              summary: { type: 'string' },
+              title: { type: 'string' },
+              intent: { type: 'string' },
+              bullets: { type: 'array', minItems: 2, maxItems: 8, items: { type: 'string' } },
+              speakerNotes: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+    { signal: opts.signal },
+  )
+  const content = response.output_text
+  if (!content) throw new Error('OpenAI returned empty slide assistant result.')
+  const parsed = JSON.parse(content) as SlideAssistantResult
+  if (
+    !parsed.summary ||
+    !parsed.title ||
+    !parsed.intent ||
+    !Array.isArray(parsed.bullets) ||
+    parsed.bullets.length < 2
+  ) {
+    throw new ModelOutputError('OpenAI returned invalid slide assistant output.')
+  }
+  return {
+    value: parsed,
+    usage: {
+      inputTokens: response.usage?.input_tokens,
+      outputTokens: response.usage?.output_tokens,
+    },
+  }
 }

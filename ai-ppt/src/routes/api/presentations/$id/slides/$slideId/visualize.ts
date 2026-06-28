@@ -33,7 +33,7 @@ export const Route = createFileRoute(
         const parsed = visualizeSchema.safeParse(await request.json().catch(() => ({})))
         const kind = parsed.success ? parsed.data.kind : 'auto'
 
-        const result = await visualizeSlide(params.id, params.slideId, kind)
+        const result = await visualizeSlide(params.id, params.slideId, kind, session.user.id)
         if (!result.ok) return json({ error: result.error }, { status: 502 })
 
         return json({ slideData: result.slideData })

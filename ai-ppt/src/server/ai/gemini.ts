@@ -92,7 +92,18 @@ export type SlideAssistantInput = {
   language?: string
 }
 
-export async function improveSlideWithGemini(input: SlideAssistantInput) {
+export type SlideAssistantResult = {
+  summary: string
+  title: string
+  intent: string
+  bullets: string[]
+  speakerNotes: string
+}
+
+export async function improveSlideWithGemini(
+  input: SlideAssistantInput,
+  opts: { model?: string; signal?: AbortSignal } = {},
+): Promise<{ value: SlideAssistantResult; usage: TokenUsage }> {
   const ai = getClient()
   const systemInstruction = `You are an expert presentation editor.
 Revise one slide according to the user instruction.
@@ -105,10 +116,11 @@ Return strict JSON only with:
 Do not include markdown.`
 
   const response = await ai.models.generateContent({
-    model: textModel(),
+    model: opts.model ?? textModel(),
     contents: JSON.stringify(input),
     config: {
       systemInstruction,
+      abortSignal: opts.signal,
       responseMimeType: 'application/json',
       responseSchema: {
         type: Type.OBJECT,
@@ -127,13 +139,7 @@ Do not include markdown.`
   const text = response.text
   if (!text) throw new Error('Gemini returned empty slide assistant result.')
 
-  const parsed = JSON.parse(text) as {
-    summary: string
-    title: string
-    intent: string
-    bullets: string[]
-    speakerNotes: string
-  }
+  const parsed = JSON.parse(text) as SlideAssistantResult
 
   if (
     !parsed.summary ||
@@ -142,38 +148,54 @@ Do not include markdown.`
     !Array.isArray(parsed.bullets) ||
     parsed.bullets.length < 2
   ) {
-    throw new Error('Gemini returned invalid slide assistant output.')
+    throw new ModelOutputError('Gemini returned invalid slide assistant output.')
   }
 
-  return parsed
+  return {
+    value: parsed,
+    usage: {
+      inputTokens: response.usageMetadata?.promptTokenCount,
+      outputTokens: response.usageMetadata?.candidatesTokenCount,
+    },
+  }
 }
 
 export async function generateSlideVisualWithGemini(
   input: SlideVisualInput,
-): Promise<unknown> {
+  opts: { model?: string; signal?: AbortSignal } = {},
+): Promise<{ value: unknown; usage: TokenUsage }> {
   const ai = getClient()
   const response = await ai.models.generateContent({
-    model: textModel(),
+    model: opts.model ?? textModel(),
     contents: JSON.stringify(input),
     config: {
       systemInstruction: VISUALIZE_SYSTEM_INSTRUCTION,
+      abortSignal: opts.signal,
       responseMimeType: 'application/json',
     },
   })
   const text = response.text
   if (!text) throw new Error('Gemini returned empty visual.')
-  return JSON.parse(text)
+  return {
+    value: JSON.parse(text),
+    usage: {
+      inputTokens: response.usageMetadata?.promptTokenCount,
+      outputTokens: response.usageMetadata?.candidatesTokenCount,
+    },
+  }
 }
 
 export async function applyTextActionWithGemini(
   input: TextActionInput,
-): Promise<string[]> {
+  opts: { model?: string; signal?: AbortSignal } = {},
+): Promise<{ value: string[]; usage: TokenUsage }> {
   const ai = getClient()
   const response = await ai.models.generateContent({
-    model: textModel(),
+    model: opts.model ?? textModel(),
     contents: JSON.stringify({ bullets: input.bullets, context: input.context }),
     config: {
       systemInstruction: buildTextActionSystemInstruction(input.action),
+      abortSignal: opts.signal,
       responseMimeType: 'application/json',
       responseSchema: {
         type: Type.OBJECT,
@@ -187,7 +209,13 @@ export async function applyTextActionWithGemini(
   const text = response.text
   if (!text) throw new Error('Gemini returned empty text action result.')
   const parsed = JSON.parse(text) as { bullets?: unknown }
-  return normalizeBullets(parsed.bullets)
+  return {
+    value: normalizeBullets(parsed.bullets),
+    usage: {
+      inputTokens: response.usageMetadata?.promptTokenCount,
+      outputTokens: response.usageMetadata?.candidatesTokenCount,
+    },
+  }
 }
 
 function normalizeBullets(value: unknown): string[] {

@@ -1,16 +1,8 @@
 import { prisma } from '@/lib/db'
+import { callModel, getFallbackChain } from '@/server/ai/runtime'
 import { applyTextActionWithGemini } from '@/server/ai/gemini'
 import { applyTextActionWithOpenAI } from '@/server/ai/openai'
 import type { TextTransformAction } from '@/generated/prisma/client'
-
-function resolveProvider(): 'gemini' | 'openai' {
-  const raw =
-    process.env.OUTLINE_PROVIDER ??
-    process.env.TEXT_PROVIDER ??
-    process.env.AI_PROVIDER ??
-    'openai'
-  return raw.toLowerCase() === 'openai' ? 'openai' : 'gemini'
-}
 
 export type TextActionResult =
   | { ok: true; bullets: string[] }
@@ -24,6 +16,7 @@ export async function applySlideTextAction(
   presentationId: string,
   slideId: string,
   action: TextTransformAction,
+  userId?: string,
 ): Promise<TextActionResult> {
   const slide = await prisma.slide.findFirst({
     where: { id: slideId, presentationId },
@@ -39,11 +32,22 @@ export async function applySlideTextAction(
   }
 
   const context = `Slide title: ${slide.title}. Purpose: ${slide.intent}`
-  const run = resolveProvider() === 'openai' ? applyTextActionWithOpenAI : applyTextActionWithGemini
+  const actionInput = { action, bullets, context }
 
   let next: string[]
   try {
-    next = await run({ action, bullets, context })
+    const generation = await callModel<string[]>({
+      op: 'textAction',
+      kind: 'text',
+      chain: getFallbackChain('textAction'),
+      userId,
+      cacheInput: actionInput,
+      run: async ({ provider, model, signal }) =>
+        provider === 'openai'
+          ? await applyTextActionWithOpenAI(actionInput, { model, signal })
+          : await applyTextActionWithGemini(actionInput, { model, signal }),
+    })
+    next = generation.value
   } catch {
     return { ok: false, error: 'AI text action failed. Please try again.' }
   }

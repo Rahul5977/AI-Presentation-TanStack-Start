@@ -1,25 +1,11 @@
 import { prisma } from '@/lib/db'
 import { Prisma } from '@/generated/prisma/client'
+import { callModel, getFallbackChain } from '@/server/ai/runtime'
 import { generateSlideVisualWithGemini } from '@/server/ai/gemini'
 import { generateSlideVisualWithOpenAI } from '@/server/ai/openai'
 import { coerceSlideData, slideDataSchema } from '@/lib/slide-data'
 import type { SlideData, SlideDataKind } from '@/lib/slide-data'
 import type { SlideVisualInput } from '@/server/ai/visualize-prompt'
-
-function resolveProvider(): 'gemini' | 'openai' {
-  const raw =
-    process.env.OUTLINE_PROVIDER ??
-    process.env.TEXT_PROVIDER ??
-    process.env.AI_PROVIDER ??
-    'openai'
-  return raw.toLowerCase() === 'openai' ? 'openai' : 'gemini'
-}
-
-async function generateVisual(input: SlideVisualInput): Promise<unknown> {
-  return resolveProvider() === 'openai'
-    ? await generateSlideVisualWithOpenAI(input)
-    : await generateSlideVisualWithGemini(input)
-}
 
 export type VisualizeResult =
   | { ok: true; slideData: SlideData }
@@ -34,6 +20,7 @@ export async function visualizeSlide(
   presentationId: string,
   slideId: string,
   kind: SlideDataKind | 'auto',
+  userId?: string,
 ): Promise<VisualizeResult> {
   const slide = await prisma.slide.findFirst({
     where: { id: slideId, presentationId },
@@ -45,12 +32,25 @@ export async function visualizeSlide(
     ? (slide.bullets as unknown[]).filter((b): b is string => typeof b === 'string')
     : []
 
+  const visualInput: SlideVisualInput = {
+    kind,
+    slide: { title: slide.title, intent: slide.intent, bullets },
+  }
+
   let raw: unknown
   try {
-    raw = await generateVisual({
-      kind,
-      slide: { title: slide.title, intent: slide.intent, bullets },
+    const generation = await callModel<unknown>({
+      op: 'visualize',
+      kind: 'text',
+      chain: getFallbackChain('visualize'),
+      userId,
+      cacheInput: visualInput,
+      run: async ({ provider, model, signal }) =>
+        provider === 'openai'
+          ? await generateSlideVisualWithOpenAI(visualInput, { model, signal })
+          : await generateSlideVisualWithGemini(visualInput, { model, signal }),
     })
+    raw = generation.value
   } catch {
     return { ok: false, error: 'AI visual generation failed. Please try again.' }
   }

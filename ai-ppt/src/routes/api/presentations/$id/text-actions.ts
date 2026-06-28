@@ -33,6 +33,7 @@ export const Route = createFileRoute('/api/presentations/$id/text-actions')({
           params.id,
           parsed.data.slideId,
           parsed.data.action,
+          session.user.id,
         )
         if (!result.ok) return json({ error: result.error }, { status: 502 })
 

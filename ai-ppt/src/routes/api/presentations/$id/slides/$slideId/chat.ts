@@ -4,7 +4,9 @@ import { getRequestHeaders } from '@tanstack/react-start/server'
 
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { BudgetExceededError, callModel, getFallbackChain } from '@/server/ai/runtime'
 import { improveSlideWithGemini } from '@/server/ai/gemini'
+import { improveSlideWithOpenAI } from '@/server/ai/openai'
 import { updateSlideContent } from '@/server/presentations/slide-service'
 import {
   assertQuota,
@@ -72,7 +74,7 @@ export const Route = createFileRoute('/api/presentations/$id/slides/$slideId/cha
           return json({ error: 'Slide or presentation not found.' }, { status: 404 })
         }
 
-        const result = await improveSlideWithGemini({
+        const assistantInput = {
           instruction: body.message.trim(),
           slide: {
             title: slide.title,
@@ -84,7 +86,30 @@ export const Route = createFileRoute('/api/presentations/$id/slides/$slideId/cha
           presentationTone: slide.presentation.tone,
           presentationDepth: slide.presentation.depth,
           language: slide.presentation.language,
-        })
+        }
+
+        let result
+        try {
+          const generation = await callModel({
+            op: 'slideChat',
+            kind: 'text',
+            chain: getFallbackChain('slideChat'),
+            userId: session.user.id,
+            run: async ({ provider, model, signal }) =>
+              provider === 'openai'
+                ? await improveSlideWithOpenAI(assistantInput, { model, signal })
+                : await improveSlideWithGemini(assistantInput, { model, signal }),
+          })
+          result = generation.value
+        } catch (error) {
+          if (error instanceof BudgetExceededError) {
+            return json({ error: error.message }, { status: 429 })
+          }
+          return json(
+            { error: 'The slide assistant is temporarily unavailable. Please try again.' },
+            { status: 503 },
+          )
+        }
 
         await recordUsage({
           userId: session.user.id,
