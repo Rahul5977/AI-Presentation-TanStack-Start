@@ -95,7 +95,7 @@ function PresentationProgressPage() {
   const [presentation, setPresentation] = useState<PresentationState | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isApplyingTemplate, setIsApplyingTemplate] = useState(false)
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'idle'>('idle')
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'idle' | 'error'>('idle')
   const [showShare, setShowShare] = useState(false)
   const [showMembers, setShowMembers] = useState(false)
   const [showDeckAgent, setShowDeckAgent] = useState(false)
@@ -105,6 +105,12 @@ function PresentationProgressPage() {
   const [selectedSlideId, setSelectedSlideId] = useState<string | null>(null)
   const lastStatusRef = useRef<PresentationState['status'] | null>(null)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Pending per-slide autosaves, keyed by slideId, flushed together by one timer.
+  // Keyed by slide so editing slide A then slide B never drops A's edit.
+  const pendingSavesRef = useRef<Map<string, Partial<EditableSlide>>>(new Map())
+  const savedResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const saveStatusRef = useRef(saveStatus)
+  saveStatusRef.current = saveStatus
   const templates = useMemo(() => listTemplates(), [])
   const sensors = useSensors(useSensor(PointerSensor))
 
@@ -206,29 +212,114 @@ function PresentationProgressPage() {
     }
   }
 
-  // ── autosave helper ────────────────────────────────────────────────────
+  // ── autosave ───────────────────────────────────────────────────────────
+  // Flush every pending slide. A save "succeeds" only on res.ok — fetch resolves
+  // (not rejects) for 4xx/5xx, so we must check the status explicitly, otherwise
+  // a rejected save would falsely report "Saved" and silently lose the edit.
+  const flushSaves = useCallback(async () => {
+    const pending = pendingSavesRef.current
+    if (pending.size === 0) return
 
-  const scheduleSave = useCallback(
-    (slideId: string, data: Partial<EditableSlide>) => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-      setSaveStatus('saving')
-      saveTimerRef.current = setTimeout(async () => {
+    // Snapshot the current batch and clear, so edits made *during* the flush
+    // accumulate freshly rather than being dropped on success.
+    const batch = Array.from(pending.entries())
+    pending.clear()
+    setSaveStatus('saving')
+
+    const failed: Array<[string, Partial<EditableSlide>]> = []
+    await Promise.all(
+      batch.map(async ([slideId, data]) => {
         try {
-          await fetch(`/api/presentations/${id}/slides/${slideId}/`, {
+          const res = await fetch(`/api/presentations/${id}/slides/${slideId}/`, {
             method: 'PATCH',
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify(data),
           })
-          setSaveStatus('saved')
-          setTimeout(() => setSaveStatus('idle'), 2500)
+          if (!res.ok) failed.push([slideId, data])
         } catch {
-          setSaveStatus('idle')
-          toast.error('Autosave failed.')
+          failed.push([slideId, data])
         }
-      }, 1200)
+      }),
+    )
+
+    if (failed.length > 0) {
+      // Re-queue failures for retry, but never clobber a newer edit that landed
+      // while the request was in flight.
+      for (const [slideId, data] of failed) {
+        if (!pending.has(slideId)) pending.set(slideId, data)
+      }
+      setSaveStatus('error')
+      toast.error('Couldn’t save your changes. Retrying…', { id: 'autosave-error' })
+      // Auto-retry the failed batch after a short backoff.
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+      saveTimerRef.current = setTimeout(() => void flushSaves(), 4000)
+      return
+    }
+
+    // Only report "Saved" if no new edits arrived mid-flush.
+    if (pending.size === 0) {
+      setSaveStatus('saved')
+      if (savedResetTimerRef.current) clearTimeout(savedResetTimerRef.current)
+      savedResetTimerRef.current = setTimeout(
+        () => setSaveStatus((s) => (s === 'saved' ? 'idle' : s)),
+        2500,
+      )
+    }
+  }, [id])
+
+  const scheduleSave = useCallback(
+    (slideId: string, data: Partial<EditableSlide>) => {
+      // Overwrite this slide's pending patch (latest full field-set wins) while
+      // preserving other slides' pending edits.
+      pendingSavesRef.current.set(slideId, data)
+      setSaveStatus('saving')
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+      saveTimerRef.current = setTimeout(() => void flushSaves(), 1200)
     },
-    [id],
+    [flushSaves],
   )
+
+  const retrySave = useCallback(() => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    void flushSaves()
+  }, [flushSaves])
+
+  // Don't let a debounced/unsaved edit vanish on navigation or tab close.
+  // Depends only on `id` so the cleanup runs on real unmount (or deck switch),
+  // not on every save-status change — it reads live state through refs.
+  useEffect(() => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      const hasUnsaved =
+        pendingSavesRef.current.size > 0 ||
+        saveStatusRef.current === 'saving' ||
+        saveStatusRef.current === 'error'
+      if (!hasUnsaved) return
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+
+    return () => {
+      window.removeEventListener('beforeunload', onBeforeUnload)
+      // Best-effort flush on unmount; keepalive lets the request outlive the page.
+      const pending = pendingSavesRef.current
+      for (const [slideId, data] of pending.entries()) {
+        try {
+          void fetch(`/api/presentations/${id}/slides/${slideId}/`, {
+            method: 'PATCH',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(data),
+            keepalive: true,
+          })
+        } catch {
+          /* nothing else we can do as the component unmounts */
+        }
+      }
+      pending.clear()
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+      if (savedResetTimerRef.current) clearTimeout(savedResetTimerRef.current)
+    }
+  }, [id])
 
   // ── slide change handlers ──────────────────────────────────────────────
 
@@ -581,6 +672,19 @@ function PresentationProgressPage() {
                     <span className="ml-2 text-emerald-600 dark:text-emerald-400">
                       <Save size={11} className="mr-1 inline" />
                       Saved
+                    </span>
+                  )}
+                  {saveStatus === 'error' && (
+                    <span className="ml-2 inline-flex items-center gap-1.5 text-red-600 dark:text-red-400">
+                      <Save size={11} className="inline" />
+                      Unsaved changes
+                      <button
+                        type="button"
+                        onClick={retrySave}
+                        className="rounded border border-red-500/40 px-1.5 py-0.5 text-[11px] font-medium hover:bg-red-500/10"
+                      >
+                        Retry
+                      </button>
                     </span>
                   )}
                 </>
